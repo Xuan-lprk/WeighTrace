@@ -120,8 +120,8 @@ struct MeasurementReviewView: View {
                     VStack(spacing: 10) {
                         Label(
                             healthSyncEnabled
-                                ? "本地记录已保存；Apple 健康同步按当前权限执行"
-                                : "本次已保存为 App 本地记录",
+                                ? String(localized: "本地记录已保存；Apple 健康同步按当前权限执行")
+                                : String(localized: "本次已保存为 App 本地记录"),
                             systemImage: healthSyncEnabled ? "heart.text.square" : "internaldrive"
                         )
                         .font(.callout)

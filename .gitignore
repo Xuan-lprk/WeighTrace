@@ -23,3 +23,8 @@ build/
 *.log
 Local.xcconfig
 Secrets.xcconfig
+
+# Local project notes
+/docs/CHANGELOG.md
+/docs/ROADMAP.md
+/docs/VISION.md

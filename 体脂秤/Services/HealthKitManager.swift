@@ -10,10 +10,10 @@ enum HealthBodyMetric: String, CaseIterable, Hashable {
 
     var title: String {
         switch self {
-        case .weight: "体重"
+        case .weight: String(localized: "体重")
         case .bmi: "BMI"
-        case .bodyFat: "体脂率"
-        case .leanBodyMass: "去脂体重"
+        case .bodyFat: String(localized: "体脂率")
+        case .leanBodyMass: String(localized: "去脂体重")
         }
     }
 
@@ -41,7 +41,7 @@ struct HealthDataSourceSummary: Identifiable {
         HealthBodyMetric.allCases
             .filter(metrics.contains)
             .map(\.title)
-            .joined(separator: "、")
+            .joined(separator: String(localized: "、"))
     }
 }
 
@@ -102,11 +102,11 @@ final class HealthKitManager: ObservableObject {
     static let leanBodyMassKey = "afu.health.leanBodyMass"
     private static let archiveMetadataKey = "xuanlprk.measurementArchiveV1"
 
-    @Published private(set) var statusText = "尚未连接 Apple 健康"
+    @Published private(set) var statusText = String(localized: "尚未连接 Apple 健康")
     @Published private(set) var lastSyncText: String?
     @Published private(set) var sourceSummaries: [HealthDataSourceSummary] = []
     @Published private(set) var duplicateWeightGroups: [HealthDuplicateWeightGroup] = []
-    @Published private(set) var sourceStatusText = "尚未扫描 Apple 健康数据来源"
+    @Published private(set) var sourceStatusText = String(localized: "尚未扫描 Apple 健康数据来源")
     @Published private(set) var isScanningSources = false
     @Published private(set) var recoveryStatusText: String?
     @Published private(set) var isRecoveringMeasurements = false
@@ -136,21 +136,21 @@ final class HealthKitManager: ObservableObject {
 
     func requestAuthorization() {
         guard isAvailable else {
-            statusText = "此设备不支持 Apple 健康"
+            statusText = String(localized: "此设备不支持 Apple 健康")
             return
         }
 
         let writeTypes = enabledWriteTypes()
         guard !writeTypes.isEmpty else {
-            statusText = "请至少选择一个同步项目"
+            statusText = String(localized: "请至少选择一个同步项目")
             return
         }
 
         healthStore.requestAuthorization(toShare: writeTypes, read: readableBodyTypes()) { [weak self] success, error in
             guard let manager = self else { return }
             let message = success
-                ? "已请求 Apple 健康写入权限"
-                : (error?.localizedDescription ?? "未获得 Apple 健康权限")
+                ? String(localized: "已请求 Apple 健康写入权限")
+                : (error?.localizedDescription ?? String(localized: "未获得 Apple 健康权限"))
             Task { @MainActor in
                 manager.statusText = message
                 if success {
@@ -162,7 +162,7 @@ final class HealthKitManager: ObservableObject {
 
     func requestMeasurementRecovery() {
         guard isAvailable else {
-            recoveryStatusText = "此设备不支持 Apple 健康"
+            recoveryStatusText = String(localized: "此设备不支持 Apple 健康")
             return
         }
         healthStore.requestAuthorization(toShare: [], read: readableBodyTypes()) { [weak self] success, error in
@@ -171,7 +171,7 @@ final class HealthKitManager: ObservableObject {
                 if success {
                     await manager.restoreMeasurementsFromHealth()
                 } else {
-                    manager.recoveryStatusText = error?.localizedDescription ?? "未获得 Apple 健康读取权限"
+                    manager.recoveryStatusText = error?.localizedDescription ?? String(localized: "未获得 Apple 健康读取权限")
                 }
             }
         }
@@ -179,7 +179,7 @@ final class HealthKitManager: ObservableObject {
 
     func requestDataSourceAccess() {
         guard isAvailable else {
-            sourceStatusText = "此设备不支持 Apple 健康"
+            sourceStatusText = String(localized: "此设备不支持 Apple 健康")
             return
         }
 
@@ -189,7 +189,7 @@ final class HealthKitManager: ObservableObject {
                 if success {
                     manager.refreshDataSources()
                 } else {
-                    manager.sourceStatusText = error?.localizedDescription ?? "未获得 Apple 健康读取权限"
+                    manager.sourceStatusText = error?.localizedDescription ?? String(localized: "未获得 Apple 健康读取权限")
                 }
             }
         }
@@ -199,7 +199,7 @@ final class HealthKitManager: ObservableObject {
         guard isAvailable, !isScanningSources else { return }
 
         isScanningSources = true
-        sourceStatusText = "正在检查最近一年的身体测量记录…"
+        sourceStatusText = String(localized: "正在检查最近一年的身体测量记录…")
 
         Task { [weak self] in
             guard let manager = self else { return }
@@ -263,7 +263,7 @@ final class HealthKitManager: ObservableObject {
                     }
                 manager.duplicateWeightGroups = Self.detectDuplicateWeightGroups(in: weightSamples)
                 manager.sourceStatusText = manager.sourceSummaries.isEmpty
-                    ? "没有读到记录。请在“健康”中确认已允许本 App 读取身体测量数据。"
+                    ? String(localized: "没有读到记录。请在“健康”中确认已允许本 App 读取身体测量数据。")
                     : Self.sourceStatus(
                         sourceCount: manager.sourceSummaries.count,
                         duplicateCount: manager.duplicateWeightGroups.count
@@ -271,7 +271,7 @@ final class HealthKitManager: ObservableObject {
             } catch {
                 manager.sourceSummaries = []
                 manager.duplicateWeightGroups = []
-                manager.sourceStatusText = "读取失败：\(error.localizedDescription)"
+                manager.sourceStatusText = String(localized: "读取失败：\(error.localizedDescription)")
             }
             manager.isScanningSources = false
         }
@@ -282,7 +282,7 @@ final class HealthKitManager: ObservableObject {
 
         let samples = makeSamples(for: measurement)
         guard !samples.isEmpty else {
-            statusText = "没有选择需要同步的项目"
+            statusText = String(localized: "没有选择需要同步的项目")
             return
         }
 
@@ -295,8 +295,8 @@ final class HealthKitManager: ObservableObject {
                 try await manager.saveSamples(samples)
                 let formatter = DateFormatter()
                 formatter.dateFormat = "MM-dd HH:mm"
-                manager.lastSyncText = "最近同步：\(formatter.string(from: measurement.date))"
-                manager.statusText = "已写入 Apple 健康"
+                manager.lastSyncText = String(localized: "最近同步：\(formatter.string(from: measurement.date))")
+                manager.statusText = String(localized: "已写入 Apple 健康")
             } catch {
                 manager.statusText = error.localizedDescription
             }
@@ -327,28 +327,28 @@ final class HealthKitManager: ObservableObject {
         }
 
         statusText = deletedCount > 0
-            ? "已从 Apple 健康删除 \(deletedCount) 条关联数据"
-            : "Apple 健康中没有这次测量的关联数据"
+            ? String(localized: "已从 Apple 健康删除 \(deletedCount) 条关联数据")
+            : String(localized: "Apple 健康中没有这次测量的关联数据")
         return deletedCount
     }
 
     func refreshStatus() {
         guard isAvailable else {
-            statusText = "此设备不支持 Apple 健康"
+            statusText = String(localized: "此设备不支持 Apple 健康")
             return
         }
         if !UserDefaults.standard.bool(forKey: Self.enabledKey) {
-            statusText = "同步尚未开启"
+            statusText = String(localized: "同步尚未开启")
             return
         }
 
         let statuses = enabledWriteTypes().map { healthStore.authorizationStatus(for: $0) }
         if statuses.contains(.sharingDenied) {
-            statusText = "部分项目未获写入权限"
+            statusText = String(localized: "部分项目未获写入权限")
         } else if !statuses.isEmpty && statuses.allSatisfy({ $0 == .sharingAuthorized }) {
-            statusText = "已连接 Apple 健康"
+            statusText = String(localized: "已连接 Apple 健康")
         } else {
-            statusText = "等待 Apple 健康授权"
+            statusText = String(localized: "等待 Apple 健康授权")
         }
     }
 
@@ -410,7 +410,7 @@ final class HealthKitManager: ObservableObject {
     private func restoreMeasurementsFromHealth() async {
         guard !isRecoveringMeasurements else { return }
         isRecoveringMeasurements = true
-        recoveryStatusText = "正在从 Apple 健康恢复本 App 档案…"
+        recoveryStatusText = String(localized: "正在从 Apple 健康恢复本 App 档案…")
 
         do {
             var recoveredByID: [UUID: BodyMeasurement] = [:]
@@ -433,14 +433,14 @@ final class HealthKitManager: ObservableObject {
             let measurements = recoveredByID.values.sorted { $0.date > $1.date }
             let importedCount = onMeasurementsRecovered?(measurements) ?? 0
             if measurements.isEmpty {
-                recoveryStatusText = "Apple 健康中没有找到可恢复的本 App 完整档案"
+                recoveryStatusText = String(localized: "Apple 健康中没有找到可恢复的本 App 完整档案")
             } else if importedCount == 0 {
-                recoveryStatusText = "本地记录已经完整，无需重复恢复"
+                recoveryStatusText = String(localized: "本地记录已经完整，无需重复恢复")
             } else {
-                recoveryStatusText = "已从 Apple 健康恢复 \(importedCount) 条本地记录"
+                recoveryStatusText = String(localized: "已从 Apple 健康恢复 \(importedCount) 条本地记录")
             }
         } catch {
-            recoveryStatusText = "恢复失败：\(error.localizedDescription)"
+            recoveryStatusText = String(localized: "恢复失败：\(error.localizedDescription)")
         }
         isRecoveringMeasurements = false
     }
@@ -501,14 +501,14 @@ final class HealthKitManager: ObservableObject {
     private static func providerName(sourceName: String, bundleIdentifier: String) -> String {
         let value = "\(sourceName) \(bundleIdentifier)".lowercased()
         let providers: [(needles: [String], name: String)] = [
-            (["huawei"], "华为"),
-            (["xiaomi", "mijia", "mi home"], "小米"),
+            (["huawei"], String(localized: "华为")),
+            (["xiaomi", "mijia", "mi home"], String(localized: "小米")),
             (["withings", "health mate"], "Withings"),
             (["garmin"], "Garmin"),
             (["renpho"], "RENPHO"),
             (["eufy"], "Eufy"),
             (["inbody"], "InBody"),
-            (["omron"], "欧姆龙"),
+            (["omron"], String(localized: "欧姆龙")),
             (["fitbit", "google health"], "Fitbit / Google"),
             (["fitdays"], "Fitdays"),
             (["okok"], "OKOK"),
@@ -554,9 +554,9 @@ final class HealthKitManager: ObservableObject {
 
     private static func sourceStatus(sourceCount: Int, duplicateCount: Int) -> String {
         guard duplicateCount > 0 else {
-            return "发现 \(sourceCount) 个数据来源，未发现明显重复"
+            return String(localized: "发现 \(sourceCount) 个数据来源，未发现明显重复")
         }
-        return "发现 \(sourceCount) 个数据来源，\(duplicateCount) 组可能重复"
+        return String(localized: "发现 \(sourceCount) 个数据来源，\(duplicateCount) 组可能重复")
     }
 
     private func makeSamples(for measurement: BodyMeasurement) -> [HKQuantitySample] {
@@ -673,9 +673,9 @@ private enum HealthArchiveError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .saveFailed:
-            "写入 Apple 健康失败"
+            String(localized: "写入 Apple 健康失败")
         case .deletionFailed:
-            "Apple 健康未能删除关联数据"
+            String(localized: "Apple 健康未能删除关联数据")
         }
     }
 }

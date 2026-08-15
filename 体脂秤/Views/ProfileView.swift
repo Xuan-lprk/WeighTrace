@@ -15,7 +15,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack { Form {
             Section("我的设备") {
-                HStack { Image(systemName: "scalemass").foregroundStyle(.teal); VStack(alignment: .leading) { Text(scale.deviceName ?? "AFU Welland 体脂秤"); Text(scale.connectionState.title).font(.caption).foregroundStyle(.secondary) }; Spacer(); Circle().fill(scale.connectionState.color).frame(width: 9, height: 9) }
+                HStack { Image(systemName: "scalemass").foregroundStyle(.teal); VStack(alignment: .leading) { Text(scale.deviceName ?? String(localized: "AFU Welland 体脂秤")); Text(scale.connectionState.title).font(.caption).foregroundStyle(.secondary) }; Spacer(); Circle().fill(scale.connectionState.color).frame(width: 9, height: 9) }
                 Button { scale.startScan() } label: { Label("重新连接", systemImage: "arrow.clockwise") }
                 Button(role: .destructive) { scale.forgetPairedScale() } label: { Label("更换体脂秤", systemImage: "arrow.triangle.2.circlepath") }
             }
@@ -112,7 +112,7 @@ struct ProfileView: View {
             }
             Section {
                 ForEach(profile.members) { member in
-                    HStack { Image(systemName: "person.crop.circle").foregroundStyle(.teal); Text(member.name); Spacer(); Text(member.sex == .female ? "女" : "男").font(.caption).foregroundStyle(.secondary) }
+                    HStack { Image(systemName: "person.crop.circle").foregroundStyle(.teal); Text(member.name); Spacer(); Text(member.sex == .female ? String(localized: "女") : String(localized: "男")).font(.caption).foregroundStyle(.secondary) }
                 }
                 .onDelete { profile.removeMembers(at: $0) }
                 Button { showingAddMember = true } label: { Label("添加家庭成员", systemImage: "person.badge.plus") }
@@ -166,7 +166,7 @@ struct AddFamilyMemberView: View {
             Stepper("身高 \(Int(height)) cm", value: $height, in: 100...230)
         }
         .navigationTitle("添加成员")
-        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("保存") { onSave(FamilyMember(name: name.isEmpty ? "家庭成员" : name, sex: sex, height: height, birthDate: birthDate, referenceWeight: referenceWeight)); dismiss() }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) } }
+        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("保存") { onSave(FamilyMember(name: name.isEmpty ? String(localized: "家庭成员") : name, sex: sex, height: height, birthDate: birthDate, referenceWeight: referenceWeight)); dismiss() }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) } }
         }
     }
 }

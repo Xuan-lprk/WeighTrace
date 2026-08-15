@@ -6,9 +6,9 @@ import Combine
 struct DiscoveredScale: Identifiable { let peripheral: CBPeripheral; let name: String; let identifier: String; let rssi: Int; var id: UUID { peripheral.identifier } }
 
 enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting, connected, measuring
-    var title: String { switch self { case .bluetoothOff: "蓝牙未开启"; case .idle: "等待连接"; case .scanning: "正在搜索体脂秤"; case .connecting: "正在连接"; case .connected: "已连接，等待上秤"; case .measuring: "正在测量" } }
-    var shortTitle: String { self == .connected || self == .measuring ? "已连接" : "未连接" }
-    var detail: String { self == .bluetoothOff ? "请在系统设置中开启蓝牙" : "AFU Welland BLE" }
+    var title: String { switch self { case .bluetoothOff: String(localized: "蓝牙未开启"); case .idle: String(localized: "等待连接"); case .scanning: String(localized: "正在搜索体脂秤"); case .connecting: String(localized: "正在连接"); case .connected: String(localized: "已连接，等待上秤"); case .measuring: String(localized: "正在测量") } }
+    var shortTitle: String { self == .connected || self == .measuring ? String(localized: "已连接") : String(localized: "未连接") }
+    var detail: String { self == .bluetoothOff ? String(localized: "请在系统设置中开启蓝牙") : "AFU Welland BLE" }
     var icon: String { self == .bluetoothOff ? "bluetooth.slash" : "dot.radiowaves.left.and.right" }
     var color: Color { self == .bluetoothOff ? .red : (self == .connected || self == .measuring ? .green : .orange) }
 }
@@ -130,7 +130,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
             _ = try await healthKit?.delete(measurement)
         } catch {
             log("[HealthKit] Failed to delete measurement \(measurement.id): \(error.localizedDescription)")
-            return "Apple 健康删除失败：\(error.localizedDescription)。本地记录仍保留，避免留下无法追踪的健康数据。"
+            return String(localized: "Apple 健康删除失败：\(error.localizedDescription)。本地记录仍保留，避免留下无法追踪的健康数据。")
         }
 
         history.removeAll { $0.id == measurement.id }
@@ -195,7 +195,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? peripheral.name ?? "未知设备"
+        let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? peripheral.name ?? String(localized: "未知设备")
         let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
         let serviceData = advertisementData[CBAdvertisementDataServiceDataKey] as? [CBUUID: Data]
         let afuData = Self.afuAdvertisementData(

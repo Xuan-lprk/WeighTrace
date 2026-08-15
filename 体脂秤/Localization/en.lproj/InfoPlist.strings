@@ -1,0 +1,5 @@
+"CFBundleName" = "AFU Scale";
+"NSBluetoothAlwaysUsageDescription" = "Bluetooth is required to connect to the scale and transfer weight and body composition measurements.";
+"NSBluetoothPeripheralUsageDescription" = "Bluetooth is required to connect to the scale and transfer weight and body composition measurements.";
+"NSHealthShareUsageDescription" = "Read weight, BMI, body fat percentage, and lean body mass to identify which scales or apps created records and compare their sources on this device.";
+"NSHealthUpdateUsageDescription" = "Write your measured weight and selected body composition estimates to Apple Health.";

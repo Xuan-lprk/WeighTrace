@@ -105,7 +105,8 @@ private struct StatisticsRow: View {
                     .foregroundStyle(.teal)
             }
             Text(verbatim: String(
-                format: "平均偏差 %@ · 中位偏差 %@ · RMSE %.2f",
+                format: String(localized: "平均偏差 %@ · 中位偏差 %@ · RMSE %.2f"),
+                locale: .current,
                 signed(statistics.meanBias),
                 signed(statistics.medianBias),
                 statistics.rmse
@@ -131,21 +132,23 @@ private struct ComparisonRow: View {
                     .fontWeight(.semibold)
                 Spacer()
                 Label(
-                    comparison.isQualified ? "合格" : "仅保存",
+                    comparison.isQualified ? String(localized: "合格") : String(localized: "仅保存"),
                     systemImage: comparison.isQualified ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
                 )
                 .font(.caption)
                 .foregroundStyle(comparison.isQualified ? .green : .orange)
             }
             Text(verbatim: String(
-                format: "阿福 %.1f%% · ADC 1 %.1f%% · ADC 2 %.1f%%",
+                format: String(localized: "阿福 %.1f%% · ADC 1 %.1f%% · ADC 2 %.1f%%"),
+                locale: .current,
                 comparison.reference.bodyFat,
                 comparison.adc1Measurement.bodyFat,
                 comparison.adc2Measurement.bodyFat
             ))
             .font(.callout)
             Text(verbatim: String(
-                format: "差值：ADC 1 %@ · ADC 2 %@ 个百分点",
+                format: String(localized: "差值：ADC 1 %@ · ADC 2 %@ 个百分点"),
+                locale: .current,
                 signed(comparison.adc1Error),
                 signed(comparison.adc2Error)
             ))
@@ -410,7 +413,14 @@ struct OfficialReferenceImportView: View {
                     let weightDifference = abs(selectedMeasurement.weight - officialWeight)
                     let minutes = abs(selectedMeasurement.date.timeIntervalSince(measuredAt)) / 60
                     LabeledContent("体重差", value: String(format: "%.2f kg", weightDifference))
-                    LabeledContent("时间差", value: String(format: "%.1f 分钟", minutes))
+                    LabeledContent(
+                        "时间差",
+                        value: String(
+                            format: String(localized: "%.1f 分钟"),
+                            locale: .current,
+                            minutes
+                        )
+                    )
                     Label(
                         weightDifference <= 0.2 && minutes <= 30
                             ? "将作为合格样本参与统计"
@@ -495,7 +505,7 @@ struct OfficialReferenceImportView: View {
             }
         }
         guard !allLines.isEmpty else {
-            ocrStatus = "没有从所选图片读到文字，仍可手动填写。"
+            ocrStatus = String(localized: "没有从所选图片读到文字，仍可手动填写。")
             isReadingScreenshots = false
             return
         }
@@ -510,9 +520,9 @@ struct OfficialReferenceImportView: View {
             draft.boneMass != nil
         ].filter { $0 }.count
         let failureSuffix = failedImageCount > 0
-            ? "；有 \(failedImageCount) 张图片识别失败，可重新选择"
+            ? String(localized: "；有 \(failedImageCount) 张图片识别失败，可重新选择")
             : ""
-        ocrStatus = "已识别并填入 \(found) 个主要字段\(failureSuffix)，请核对小数和测量时间。"
+        ocrStatus = String(localized: "已识别并填入 \(found) 个主要字段\(failureSuffix)，请核对小数和测量时间。")
         isReadingScreenshots = false
     }
 

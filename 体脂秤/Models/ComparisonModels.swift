@@ -89,14 +89,14 @@ struct ComparisonSummary {
 
     var recommendation: String {
         guard distinctQualifiedDates >= 10, let adc1, let adc2 else {
-            return "还需 \(max(0, 10 - distinctQualifiedDates)) 个不同日期的合格对照，才给出 ADC 建议。"
+            return String(localized: "还需 \(max(0, 10 - distinctQualifiedDates)) 个不同日期的合格对照，才给出 ADC 建议。")
         }
         if abs(adc1.mae - adc2.mae) < 0.1 {
-            return "两路 ADC 的 MAE 很接近，暂不建议切换。"
+            return String(localized: "两路 ADC 的 MAE 很接近，暂不建议切换。")
         }
         return adc1.mae < adc2.mae
-            ? "目前 ADC 1 更贴近阿福结果（按体脂 MAE 判断）。"
-            : "目前 ADC 2 更贴近阿福结果（按体脂 MAE 判断）。"
+            ? String(localized: "目前 ADC 1 更贴近阿福结果（按体脂 MAE 判断）。")
+            : String(localized: "目前 ADC 2 更贴近阿福结果（按体脂 MAE 判断）。")
     }
 }
 
@@ -172,11 +172,11 @@ final class ComparisonStore: ObservableObject {
         let isQualified = timeDifference <= 30 * 60 && weightDifference <= 0.2
         let reason: String
         if timeDifference > 30 * 60 {
-            reason = "阿福与本地测量相隔超过 30 分钟"
+            reason = String(localized: "阿福与本地测量相隔超过 30 分钟")
         } else if weightDifference > 0.2 {
-            reason = "两次体重相差超过 0.2 kg"
+            reason = String(localized: "两次体重相差超过 0.2 kg")
         } else {
-            reason = "时间与体重差符合对照条件"
+            reason = String(localized: "时间与体重差符合对照条件")
         }
 
         return ADCComparison(

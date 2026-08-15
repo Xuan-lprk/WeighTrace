@@ -91,10 +91,11 @@
 				};
 			};
 			buildConfigurationList = 52A4AF1930072FF900F51607 /* Build configuration list for PBXProject "体脂秤" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				"zh-Hans",
 				Base,
 			);
 			mainGroup = 52A4AF1530072FF900F51607;

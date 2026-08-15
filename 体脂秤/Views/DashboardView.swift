@@ -68,7 +68,7 @@ struct DashboardView: View {
             
             // Weight display
             VStack(spacing: 4) {
-                Text(scale.isStable ? "测量完成" : (scale.liveWeight > 0 ? "正在测量..." : "请赤脚站上体脂秤"))
+                Text(scale.isStable ? String(localized: "测量完成") : (scale.liveWeight > 0 ? String(localized: "正在测量...") : String(localized: "请赤脚站上体脂秤")))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 

@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct EmptyStateView: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
-    let message: String
+    let message: LocalizedStringKey
     var body: some View {
         VStack(spacing: 10) {
             Image(systemName: icon).font(.system(size: 34)).foregroundStyle(.teal)
@@ -15,7 +15,7 @@ struct EmptyStateView: View {
 }
 
 struct MetricTile: View {
-    let title: String; let valueString: String; let icon: String
+    let title: LocalizedStringKey; let valueString: String; let icon: String
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: icon).foregroundStyle(.teal)

@@ -1,12 +1,12 @@
 # AFU-WL 体脂秤 iOS 客户端
 
+简体中文 | [English](README_EN.md)
+
 一个使用 SwiftUI 和 CoreBluetooth 编写的非官方客户端，用于在不连接阿里服务器的情况下读取特定 AFU-WL / Welland 体脂秤，并可选择写入 Apple 健康。
 
 > 本项目来自社区逆向研究，与蚂蚁阿福、沃莱、Fitdays、Icomon 或 Apple 没有隶属或授权关系。
 
 本修改版基于 [maoziban/smart-body-scale-IOS](https://github.com/maoziban/smart-body-scale-IOS) 开发，并保留了原仓库的 Git 提交历史。新增内容包括 HealthKit 写入、ADC 选择、更稳定的广播解析、设备身份绑定、算法与隐私说明等。
-
-项目长期宗旨见 [VISION.md](VISION.md)，后续产品方向和待确认问题见 [ROADMAP.md](ROADMAP.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 当前功能
 
@@ -23,6 +23,7 @@
 - 可读取 Apple 健康中最近一年的身体测量记录，识别来源 App；
 - 提示不同 App 在短时间内写入的疑似重复体重，不自动删除数据；
 - 不包含账号、广告、网络请求或第三方统计 SDK。
+- 支持简体中文和英文，并自动跟随系统语言。
 
 ## 数据分别来自哪里
 
@@ -58,7 +59,7 @@
 - 服务：`FFB0`
 - Notify 特征：`FFB2`
 
-其他型号和固件可能使用不同广播或数据格式。详细逆向记录见 [协议笔记](PROTOCOL.md)。
+其他型号和固件可能使用不同广播或数据格式。详细逆向记录见 [协议笔记](docs/PROTOCOL.md)。
 
 ## 环境要求
 
@@ -95,7 +96,7 @@
 
 ## 隐私
 
-App 本身不发起网络请求，资料和历史保存在 App 沙盒中。启用 Apple 健康后，所选数据会交给 HealthKit，是否通过 iCloud 同步由用户的系统设置决定。完整说明见 [PRIVACY.md](PRIVACY.md)。
+App 本身不发起网络请求，资料和历史保存在 App 沙盒中。启用 Apple 健康后，所选数据会交给 HealthKit，是否通过 iCloud 同步由用户的系统设置决定。完整说明见 [PRIVACY.md](docs/PRIVACY.md)。
 
 公开 Issue 或日志前，请删除姓名、出生日期、体重和蓝牙设备标识等个人信息。
 
@@ -104,13 +105,13 @@ App 本身不发起网络请求，资料和历史保存在 App 沙盒中。启�
 ```text
 体脂秤/
 ├── App/                    # App 入口与根界面
-├── Bluetooth/              # BLE 扫描、连接、测量状态机与协议解析
-├── Domain/                 # 数据模型、用户资料与身体指标算法
-├── Features/               # 测量、历史、配对、资料等 SwiftUI 页面
-├── AppleHealth/            # Apple 健康授权、写入、来源识别与重复检测
+├── Models/                 # 测量、成员与 ADC 对照数据模型
+├── Services/               # 蓝牙、HealthKit、用户资料、算法与 OCR
+├── Views/                  # 所有 SwiftUI 功能页面与共用组件
 ├── Assets.xcassets/        # 图标与颜色资源
 └── 体脂秤.entitlements      # HealthKit entitlement
 docs/
+├── PRIVACY.md              # 隐私说明
 └── PROTOCOL.md             # AFU-WL 协议逆向笔记
 ```
 

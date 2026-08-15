@@ -22,7 +22,7 @@ struct MeasurementProfileSnapshot: Codable {
     func member(id: UUID?, name: String?, referenceWeight: Double) -> FamilyMember {
         FamilyMember(
             id: id ?? UUID(),
-            name: name ?? "本人",
+            name: name ?? String(localized: "本人"),
             sex: sex,
             height: height,
             birthDate: birthDate,

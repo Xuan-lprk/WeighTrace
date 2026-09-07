@@ -31,6 +31,17 @@ struct ProfileView: View {
             } footer: {
                 Text("秤每次会发送两个 ADC，其物理含义尚未确认。所选 ADC 会影响阻抗、体脂及由体脂推算的身体指标，但不影响体重、BMI 和骨量。若希望结果更接近蚂蚁阿福，可选择对照差值较小的；更接近官方结果不代表医学上更准确。选择仅影响之后的新测量，不会改写历史记录。")
             }
+#if targetEnvironment(macCatalyst)
+            MacUpdateSection()
+            Section {
+                Label("测量历史保存在这台 Mac", systemImage: "internaldrive")
+                LabeledContent("已保存记录", value: "\(scale.history.count)")
+            } header: {
+                Text("本地数据")
+            } footer: {
+                Text("Mac 版不访问 Apple 健康。个人资料、双 ADC 和测量历史只保存在当前 Mac 的 App 容器中，不会自动同步到其他设备；删除数据容器后无法恢复。")
+            }
+#else
             Section {
                 Toggle("自动写入 Apple 健康", isOn: $healthSyncEnabled)
                     .onChange(of: healthSyncEnabled) { enabled in
@@ -110,6 +121,7 @@ struct ProfileView: View {
             } footer: {
                 Text("识别 Apple 健康中的体重和体脂数据来自哪些 App，为后续去重、跨秤对比和异常提示打基础。")
             }
+#endif
             Section {
                 ForEach(profile.members) { member in
                     HStack { Image(systemName: "person.crop.circle").foregroundStyle(.teal); Text(member.name); Spacer(); Text(member.sex == .female ? String(localized: "女") : String(localized: "男")).font(.caption).foregroundStyle(.secondary) }
@@ -121,7 +133,13 @@ struct ProfileView: View {
             } footer: {
                 Text("测量完成后会按成员近期体重和参考体重自动归属记录。")
             }
-            Section("说明") { Text("本地历史保存在 App 容器内，卸载 App 会清除；开启 Apple 健康同步后，新测量可从健康样本中的本 App 档案恢复。体脂率为健康参考数据，不替代医疗诊断。") }
+            Section("说明") {
+#if targetEnvironment(macCatalyst)
+                Text("体脂率和其他身体成分是本地估算值，不替代医疗诊断。")
+#else
+                Text("本地历史保存在 App 容器内，卸载 App 会清除；开启 Apple 健康同步后，新测量可从健康样本中的本 App 档案恢复。体脂率为健康参考数据，不替代医疗诊断。")
+#endif
+            }
             Section("调试日志") {
                 Button("清空日志", role: .destructive) { scale.clearDebugLogs() }
                 if scale.debugLogs.isEmpty {
@@ -136,7 +154,11 @@ struct ProfileView: View {
             }
         }.navigationTitle("我的资料")
             .sheet(isPresented: $showingAddMember) { AddFamilyMemberView { profile.addMember($0) } }
-            .onAppear { healthKit.refreshStatus() }
+            .onAppear {
+#if !targetEnvironment(macCatalyst)
+                healthKit.refreshStatus()
+#endif
+            }
         }
     }
 

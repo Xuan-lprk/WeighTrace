@@ -118,12 +118,21 @@ struct MeasurementReviewView: View {
                     }
 
                     VStack(spacing: 10) {
-                        Label(
-                            healthSyncEnabled
-                                ? String(localized: "本地记录已保存；Apple 健康同步按当前权限执行")
-                                : String(localized: "本次已保存为 App 本地记录"),
-                            systemImage: healthSyncEnabled ? "heart.text.square" : "internaldrive"
-                        )
+                        Group {
+#if targetEnvironment(macCatalyst)
+                            Label(
+                                String(localized: "本次已保存到这台 Mac"),
+                                systemImage: "internaldrive"
+                            )
+#else
+                            Label(
+                                healthSyncEnabled
+                                    ? String(localized: "本地记录已保存；Apple 健康同步按当前权限执行")
+                                    : String(localized: "本次已保存为 App 本地记录"),
+                                systemImage: healthSyncEnabled ? "heart.text.square" : "internaldrive"
+                            )
+#endif
+                        }
                         .font(.callout)
                         .foregroundStyle(.secondary)
 
@@ -168,12 +177,22 @@ struct MeasurementReviewView: View {
                 isPresented: $showingDeleteConfirmation,
                 titleVisibility: .visible
             ) {
+#if targetEnvironment(macCatalyst)
+                Button("删除本地记录", role: .destructive) {
+                    Task { await deleteMeasurement() }
+                }
+#else
                 Button("同时删除本地与 Apple 健康数据", role: .destructive) {
                     Task { await deleteMeasurement() }
                 }
+#endif
                 Button("取消", role: .cancel) {}
             } message: {
+#if targetEnvironment(macCatalyst)
+                Text("会删除这台 Mac 上的测量记录和对应的阿福对照。")
+#else
                 Text("会删除本地记录、对应的阿福对照，以及本 App 为这次测量写入 Apple 健康的关联样本。")
+#endif
             }
             .alert(
                 "删除失败",

@@ -28,11 +28,16 @@ struct ContentView: View {
         .tint(.teal)
         .onAppear {
             scale.profile = profile
-            scale.healthKit = healthKit
             scale.comparisonStore = comparisonStore
+#if !targetEnvironment(macCatalyst)
+            scale.healthKit = healthKit
             healthKit.onMeasurementsRecovered = { measurements in
                 scale.mergeRestoredHistory(measurements)
             }
+#else
+            // macOS 没有 Apple 健康数据库；Catalyst 版只保留蓝牙测量与本地历史。
+            scale.healthKit = nil
+#endif
         }
         .onAppear { promptForInitialMemberIfNeeded() }
         .onChange(of: hasPairedScale) { _ in promptForInitialMemberIfNeeded() }

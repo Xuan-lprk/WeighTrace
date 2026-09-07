@@ -11,7 +11,7 @@ struct PairingView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "scalemass").font(.system(size: 48)).foregroundStyle(.teal)
                         Text("连接你的体脂秤").font(.title2).fontWeight(.bold)
-                        Text("请打开手机蓝牙，并让体脂秤保持在附近。首次使用需先完成设备连接。")
+                        Text("请打开本机蓝牙，并让体脂秤保持在附近。首次使用需先完成设备连接。")
                             .multilineTextAlignment(.center).font(.subheadline).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 18)

@@ -1,8 +1,8 @@
-# AFU-WL 体脂秤 iOS 客户端
+# AFU-WL 体脂秤 iOS / macOS 客户端
 
 简体中文 | [English](README_EN.md)
 
-一个使用 SwiftUI 和 CoreBluetooth 编写的非官方客户端，用于在不连接阿里服务器的情况下读取特定 AFU-WL / Welland 体脂秤，并可选择写入 Apple 健康。
+一个使用 SwiftUI 和 CoreBluetooth 编写的非官方客户端，用于在不连接阿里服务器的情况下读取特定 AFU-WL / Welland 体脂秤。iPhone/iPad 可选写入 Apple 健康；Mac 版使用本地历史。
 
 > 本项目来自社区逆向研究，与蚂蚁阿福、沃莱、Fitdays、Icomon 或 Apple 没有隶属或授权关系。
 
@@ -15,14 +15,15 @@
 - 保留秤发送的两个 ADC，并允许选择用于估算的 ADC 1 或 ADC 2；
 - 根据体重和阻抗估算体脂，并展示由体脂按比例推算的其他指标；
 - 本人资料、家庭成员匹配和本地历史；
-- 可选写入 Apple 健康：
+- 支持 iPhone、iPad 和 Mac（Mac Catalyst）前台蓝牙测量；
+- iPhone/iPad 可选写入 Apple 健康：
   - 体重；
   - BMI；
   - 体脂率；
   - 去脂体重；
-- 可读取 Apple 健康中最近一年的身体测量记录，识别来源 App；
+- iPhone/iPad 可读取 Apple 健康中最近一年的身体测量记录，识别来源 App；
 - 提示不同 App 在短时间内写入的疑似重复体重，不自动删除数据；
-- 不包含账号、广告、网络请求或第三方统计 SDK。
+- 不包含账号、广告或第三方统计 SDK；Mac 可选连接 GitHub 检查版本，不上传测量数据。
 - 支持简体中文和英文，并自动跟随系统语言。
 
 ## 数据分别来自哪里
@@ -63,9 +64,10 @@
 
 ## 环境要求
 
-- Xcode 16 或更高版本；
-- iOS / iPadOS 16.6 或更高版本；
-- 支持蓝牙低功耗的实体 iPhone 或 iPad；
+- Xcode 26.4 或更高版本；
+- iOS / iPadOS 18.6 或更高版本；
+- Mac Catalyst 构建当前最低对应 macOS 15.6；
+- 支持蓝牙低功耗的实体 iPhone、iPad 或 Mac；
 - 写入 Apple 健康需要在个人开发团队或正式团队中启用 HealthKit。
 
 模拟器可以用于编译和检查界面，但不能完成真实蓝牙测量。
@@ -75,8 +77,8 @@
 1. 克隆仓库并打开 `体脂秤.xcodeproj`。
 2. 选择 App Target，在 **Signing & Capabilities** 中选择自己的 Team。
 3. 如有需要，将 Bundle Identifier 改成自己拥有的唯一标识。
-4. 连接 iPhone 或 iPad并运行。
-5. 完全退出其他设备上的蚂蚁阿福；如果秤仍被占用，可以关闭那些设备的蓝牙。不要关闭正在运行本 App 的 iPhone/iPad 蓝牙。
+4. iPhone/iPad 选择对应真机；Mac 选择 **My Mac (Mac Catalyst)** 并运行。
+5. 完全退出其他设备上的蚂蚁阿福；如果秤仍被占用，可以关闭那些设备的蓝牙。不要关闭正在运行本 App 的设备蓝牙。
 6. 光脚站上秤将其唤醒，在配对页选择发现的设备。
 
 如果秤无法出现，请依次确认：
@@ -88,6 +90,8 @@
 
 ## Apple 健康
 
+Apple 健康功能仅在 iPhone/iPad 版显示。Mac 版不访问 HealthKit，测量结果只写入 Mac 上的 App 本地历史。
+
 在“我的资料 → Apple 健康”中启用同步并选择指标。App 只自动写入归属于“本人”的新实时测量，不会批量上传旧历史或家庭成员记录。
 
 体重属于直接测量；BMI、体脂率和去脂体重包含本地公式计算。HealthKit 样本会携带算法版本、阻抗和 ADC 编号等元数据，用于之后追溯。
@@ -96,9 +100,13 @@
 
 ## 隐私
 
-App 本身不发起网络请求，资料和历史保存在 App 沙盒中。启用 Apple 健康后，所选数据会交给 HealthKit，是否通过 iCloud 同步由用户的系统设置决定。完整说明见 [PRIVACY.md](docs/PRIVACY.md)。
+资料和历史保存在 App 沙盒中。Mac 检查更新会访问 GitHub 的公开版本信息，不上传测量数据。启用 Apple 健康后，所选数据会交给 HealthKit，是否通过 iCloud 同步由用户的系统设置决定。完整说明见 [PRIVACY.md](docs/PRIVACY.md)。
+
+Mac 测试包使用 `bash scripts/package-mac.sh` 生成，输出到 `dist/`。朋友无需 Xcode，安装说明见 [MAC_INSTALL.md](docs/MAC_INSTALL.md)。当前支持检查更新和下载页入口，安装仍需手动覆盖。
 
 公开 Issue 或日志前，请删除姓名、出生日期、体重和蓝牙设备标识等个人信息。
+
+Android 版暂未实现，已确定的 BLE、本地存储和 Health Connect 移植方法见 [Android 实现路线](docs/ANDROID_PORT.md)。
 
 ## 项目结构
 
@@ -109,8 +117,11 @@ App 本身不发起网络请求，资料和历史保存在 App 沙盒中。启�
 ├── Services/               # 蓝牙、HealthKit、用户资料、算法与 OCR
 ├── Views/                  # 所有 SwiftUI 功能页面与共用组件
 ├── Assets.xcassets/        # 图标与颜色资源
-└── 体脂秤.entitlements      # HealthKit entitlement
+├── 体脂秤.entitlements      # iOS/iPadOS HealthKit entitlement
+└── 体脂秤Mac.entitlements   # macOS 蓝牙沙盒权限
 docs/
+├── ANDROID_PORT.md         # Android 移植方法
+├── CHANGELOG.md            # 更新日志
 ├── PRIVACY.md              # 隐私说明
 └── PROTOCOL.md             # AFU-WL 协议逆向笔记
 ```
@@ -122,6 +133,17 @@ xcodebuild \
   -project "体脂秤.xcodeproj" \
   -scheme "体脂秤" \
   -destination "generic/platform=iOS Simulator" \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+Mac Catalyst 无签名构建：
+
+```bash
+xcodebuild \
+  -project "体脂秤.xcodeproj" \
+  -scheme "体脂秤" \
+  -destination "generic/platform=macOS,variant=Mac Catalyst" \
   CODE_SIGNING_ALLOWED=NO \
   build
 ```

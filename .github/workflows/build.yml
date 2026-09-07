@@ -7,18 +7,26 @@ on:
 
 jobs:
   ios:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app
-      - name: Build
+        run: sudo xcode-select -s /Applications/Xcode_26.4.app
+      - name: Build iOS
         run: >
           xcodebuild
           -project "体脂秤.xcodeproj"
           -scheme "体脂秤"
           -destination "generic/platform=iOS Simulator"
-          -derivedDataPath "$RUNNER_TEMP/DerivedData"
+          -derivedDataPath "$RUNNER_TEMP/DerivedData-iOS"
           CODE_SIGNING_ALLOWED=NO
           build
-
+      - name: Build Mac Catalyst
+        run: >
+          xcodebuild
+          -project "体脂秤.xcodeproj"
+          -scheme "体脂秤"
+          -destination "generic/platform=macOS,variant=Mac Catalyst"
+          -derivedDataPath "$RUNNER_TEMP/DerivedData-Mac"
+          CODE_SIGNING_ALLOWED=NO
+          build

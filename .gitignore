@@ -7,6 +7,7 @@ xcuserdata/
 # Build output
 DerivedData/
 build/
+dist/
 *.ipa
 *.dSYM
 *.dSYM.zip
@@ -25,6 +26,5 @@ Local.xcconfig
 Secrets.xcconfig
 
 # Local project notes
-/docs/CHANGELOG.md
 /docs/ROADMAP.md
 /docs/VISION.md

@@ -1,8 +1,8 @@
-# AFU-WL Body Composition Scale for iOS
+# AFU-WL Body Composition Scale for iOS and macOS
 
 English | [简体中文](README.md)
 
-An unofficial client built with SwiftUI and CoreBluetooth for reading selected AFU-WL / Welland body composition scales without connecting to Alibaba servers, with optional Apple Health integration.
+An unofficial client built with SwiftUI and CoreBluetooth for reading selected AFU-WL / Welland body composition scales without connecting to Alibaba servers. The iPhone and iPad versions offer optional Apple Health integration; the Mac version keeps a local history.
 
 > This project is based on community reverse-engineering research and is not affiliated with or authorized by Ant Afu, Welland, Fitdays, Icomon, or Apple.
 
@@ -15,14 +15,15 @@ This fork is based on [maoziban/smart-body-scale-IOS](https://github.com/maoziba
 - Preserves both ADC values sent by the scale and lets you select ADC 1 or ADC 2 for estimation.
 - Estimates body fat from weight and impedance, then displays additional metrics derived proportionally from body fat.
 - Supports a personal profile, household member matching, and local measurement history.
-- Optionally writes the following data to Apple Health:
+- Supports foreground Bluetooth measurements on iPhone, iPad, and Mac through Mac Catalyst.
+- On iPhone and iPad, optionally writes the following data to Apple Health:
   - Weight
   - BMI
   - Body fat percentage
   - Lean body mass
-- Reads body measurement records from the past year in Apple Health and identifies their source apps.
+- On iPhone and iPad, reads body measurement records from the past year in Apple Health and identifies their source apps.
 - Flags potentially duplicate weights written by different apps within a short period, without deleting anything automatically.
-- Contains no accounts, ads, network requests, or third-party analytics SDKs.
+- Contains no accounts, ads, or third-party analytics SDKs. Optional Mac update checks contact GitHub without uploading measurements.
 - Supports Simplified Chinese and English and automatically follows the system language.
 
 ## Where the Data Comes From
@@ -63,9 +64,10 @@ Other models and firmware versions may use different advertisements or packet fo
 
 ## Requirements
 
-- Xcode 16 or later
-- iOS / iPadOS 16.6 or later
-- A physical iPhone or iPad with Bluetooth Low Energy support
+- Xcode 26.4 or later
+- iOS / iPadOS 18.6 or later
+- The current Mac Catalyst deployment target maps to macOS 15.6 or later
+- A physical iPhone, iPad, or Mac with Bluetooth Low Energy support
 - A personal or paid Apple Developer team with HealthKit enabled if you want to write to Apple Health
 
 The simulator can be used to compile the project and inspect the interface, but it cannot perform real Bluetooth measurements.
@@ -75,8 +77,8 @@ The simulator can be used to compile the project and inspect the interface, but 
 1. Clone the repository and open `体脂秤.xcodeproj`.
 2. Select the app target and choose your own team under **Signing & Capabilities**.
 3. If necessary, change the Bundle Identifier to a unique identifier that you own.
-4. Connect an iPhone or iPad and run the app.
-5. Fully quit Ant Afu on other devices. If the scale is still occupied, turn off Bluetooth on those devices. Do not turn off Bluetooth on the iPhone or iPad running this app.
+4. Select a connected iPhone/iPad, or select **My Mac (Mac Catalyst)**, and run the app.
+5. Fully quit Ant Afu on other devices. If the scale is still occupied, turn off Bluetooth on those devices. Do not turn off Bluetooth on the device running this app.
 6. Step onto the scale barefoot to wake it, then select the discovered device on the pairing screen.
 
 If the scale does not appear, check the following:
@@ -88,6 +90,8 @@ If the scale does not appear, check the following:
 
 ## Apple Health
 
+Apple Health features are shown only on iPhone and iPad. The Mac version does not access HealthKit; it stores measurements only in the Mac app's local history.
+
 Open **Profile → Apple Health** to enable synchronization and select the metrics to write. The app automatically writes only new live measurements assigned to the primary user. It does not upload existing history or household member records in bulk.
 
 Weight is a direct measurement. BMI, body fat percentage, and lean body mass include local calculations. HealthKit samples contain metadata such as the algorithm version, impedance, and ADC index for future traceability.
@@ -96,9 +100,13 @@ Open **Profile → Cross-Scale Data** to authorize reading weight, BMI, body fat
 
 ## Privacy
 
-The app itself makes no network requests. Profiles and measurement history remain in the app sandbox. When Apple Health integration is enabled, selected data is passed to HealthKit; whether it syncs through iCloud depends on the user's system settings. See [PRIVACY.md](docs/PRIVACY.md) for the complete statement.
+Profiles and measurement history remain in the app sandbox. Mac update checks request public release information from GitHub without uploading measurements. When Apple Health integration is enabled, selected data is passed to HealthKit; whether it syncs through iCloud depends on the user's system settings. See [PRIVACY.md](docs/PRIVACY.md) for the complete statement.
+
+Run `bash scripts/package-mac.sh` to create a local test DMG in `dist/`. Recipients do not need Xcode. See [MAC_INSTALL.md](docs/MAC_INSTALL.md). Updates are checked in the app and installed manually from the release download page.
 
 Before sharing issues or logs publicly, remove names, dates of birth, weights, and Bluetooth device identifiers.
+
+An Android app has not been implemented. The proposed BLE, local-storage, and optional Health Connect approach is documented in [ANDROID_PORT.md](docs/ANDROID_PORT.md).
 
 ## Project Structure
 
@@ -109,8 +117,11 @@ Before sharing issues or logs publicly, remove names, dates of birth, weights, a
 ├── Services/               # Bluetooth, HealthKit, profiles, algorithms, and OCR
 ├── Views/                  # SwiftUI feature screens and shared components
 ├── Assets.xcassets/        # App icons and color assets
-└── 体脂秤.entitlements      # HealthKit entitlement
+├── 体脂秤.entitlements      # iOS/iPadOS HealthKit entitlement
+└── 体脂秤Mac.entitlements   # macOS Bluetooth sandbox entitlement
 docs/
+├── ANDROID_PORT.md         # Proposed Android implementation
+├── CHANGELOG.md            # Changelog
 ├── PRIVACY.md              # Privacy statement
 └── PROTOCOL.md             # AFU-WL reverse-engineering notes
 ```
@@ -122,6 +133,17 @@ xcodebuild \
   -project "体脂秤.xcodeproj" \
   -scheme "体脂秤" \
   -destination "generic/platform=iOS Simulator" \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+Unsigned Mac Catalyst build:
+
+```bash
+xcodebuild \
+  -project "体脂秤.xcodeproj" \
+  -scheme "体脂秤" \
+  -destination "generic/platform=macOS,variant=Mac Catalyst" \
   CODE_SIGNING_ALLOWED=NO \
   build
 ```

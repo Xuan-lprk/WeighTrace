@@ -15,7 +15,7 @@ import Foundation
     ) -> BodyMeasurement {
         let heightM = member.height / 100
         let bmi = weight / (heightM * heightM)
-        let age = Double(member.age)
+        let age = Double(max(0, Calendar.current.dateComponents([.year], from: member.birthDate, to: date).year ?? member.age))
         let validResistance = (100.0...1500.0).contains(impedance) ? impedance : nil
 
         let baseBodyFat: Double

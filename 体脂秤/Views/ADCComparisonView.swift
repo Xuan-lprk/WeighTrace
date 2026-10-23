@@ -6,20 +6,38 @@ struct ADCComparisonView: View {
     @EnvironmentObject private var profile: UserProfile
     @EnvironmentObject private var comparisonStore: ComparisonStore
     @State private var showingImporter = false
+    @State private var memberID = MeasurementBackup.primaryID
+
+    private var memberOptions: [FamilyMember] {
+        var members = [profile.primaryMember] + profile.members
+        for record in scale.history {
+            if let id = record.memberID, !members.contains(where: { $0.id == id }) {
+                members.append(record.profileSnapshot?.member(id: id, name: record.memberName, referenceWeight: record.weight)
+                    ?? FamilyMember(id: id, name: record.memberName ?? String(localized: "未归属"), sex: .female, height: 165, birthDate: Date(), referenceWeight: record.weight))
+            }
+        }
+        return members
+    }
 
     private var comparisons: [ADCComparison] {
         comparisonStore.comparisons(
             history: scale.history,
             fallbackMember: profile.primaryMember
-        )
+        ).filter { $0.measurement.memberID == memberID }
     }
 
     private var summary: ComparisonSummary {
-        comparisonStore.summary(for: comparisons)
+        comparisonStore.summary(for: comparisons, totalCount: comparisons.count)
     }
 
     var body: some View {
         List {
+            Section {
+                Picker("成员", selection: $memberID) {
+                    ForEach(memberOptions) { Text($0.name).tag($0.id) }
+                }
+                NavigationLink("查看 ADC 差异地图") { ADCDifferenceView(comparisons: comparisons) }
+            }
             Section {
                 Text("把同一次称重的阿福结果与本 App 的 ADC 1、ADC 2 分别计算后对照。阿福结果只是厂商参考，不代表医学真实值。")
                     .font(.callout)
@@ -203,6 +221,19 @@ struct ADCComparisonDetailView: View {
                         comparison.adc2Measurement.impedance
                     ))
                 }
+            }
+
+            Section("计算资料") {
+                Text(comparison.measurement.algorithmVersion ?? String(localized: "旧算法"))
+                if let snapshot = comparison.measurement.profileSnapshot {
+                    Text("\(snapshot.height, specifier: "%.0f") cm")
+                    Text(snapshot.sex == .male ? String(localized: "男") : String(localized: "女"))
+                    Text(snapshot.birthDate, format: .dateTime.year().month().day())
+                } else {
+                    Text("旧记录缺少资料快照，重算使用当前本人资料，仅供查看。")
+                }
+                Text(verbatim: "ADC raw: \(comparison.measurement.rawADCs ?? [])")
+                    .font(.caption).textSelection(.enabled)
             }
 
             Section("阿福扩展指标") {

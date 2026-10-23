@@ -37,6 +37,7 @@ struct MeasurementReviewView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+                    MeasurementAnnotationLink(measurement: measurement)
                     VStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 42))

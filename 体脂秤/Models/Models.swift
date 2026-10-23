@@ -60,6 +60,8 @@ struct BodyMeasurement: Identifiable, Codable, Equatable {
     var normalizedImpedances: [Double]? = nil
     var profileSnapshot: MeasurementProfileSnapshot? = nil
     var algorithmVersion: String? = nil
+    var tags: [String]? = nil
+    var note: String? = nil
 
     init(
         id: UUID,

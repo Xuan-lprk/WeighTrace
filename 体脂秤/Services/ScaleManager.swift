@@ -38,6 +38,49 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     @Published var unrecognizedWeight: Double?
     @Published var debugLogs: [String] = []
     private var hasSavedMeasurement = false
+    @Published private(set) var repeatCapture: RepeatabilityCapture?
+    @Published private(set) var repeatReports: [RepeatabilityReport] = []
+
+    func startRepeatCheck(member: FamilyMember) {
+        repeatCapture = RepeatabilityCapture(member: member)
+        reviewMeasurement = nil
+        currentMeasurement = nil
+    }
+    func endRepeatCheck() {
+        repeatCapture = nil
+        // Require a fresh step-off after experiments before normal saving resumes.
+        hasSavedMeasurement = true
+        impedance = 0; rawADCs = []; normalizedImpedances = []; selectedADCIndex = nil
+        isStable = false
+    }
+    func removeRepeatReport(id: UUID) {
+        repeatReports.removeAll { $0.id == id }; saveRepeatReports()
+    }
+    func restoreRepeatReports(_ reports: [RepeatabilityReport]) {
+        repeatReports = reports.sorted { $0.date > $1.date }; saveRepeatReports()
+    }
+    private func saveRepeatReports() {
+        if let data = try? JSONEncoder().encode(repeatReports) {
+            UserDefaults.standard.set(data, forKey: "afu.repeatability.reports")
+        }
+    }
+    private func collectRepeatCheck() {
+        guard var capture = repeatCapture, capture.captureIfReady() else { return }
+        repeatCapture = capture
+        if capture.measurements.count == 3 {
+            let report = RepeatabilityReport(id: UUID(), date: Date(), measurements: capture.measurements)
+            repeatReports.insert(report, at: 0); saveRepeatReports()
+            // Keep the completed capture active until the user explicitly exits experiment mode.
+        }
+    }
+    func updateAnnotation(id: UUID, tags: [String], note: String) {
+        guard let index = history.firstIndex(where: { $0.id == id }) else { return }
+        history[index].tags = Array(Set(tags)).sorted()
+        history[index].note = String(note.prefix(500))
+        if currentMeasurement?.id == id { currentMeasurement = history[index] }
+        if reviewMeasurement?.id == id { reviewMeasurement = history[index] }
+        saveHistory()
+    }
 
     func log(_ message: String) {
         let formatter = DateFormatter()
@@ -54,8 +97,19 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         debugLogs = []
     }
 
-    override init() { super.init(); central = CBCentralManager(delegate: self, queue: .main); loadHistory(); log("ScaleManager initialized") }
+    override init() {
+        super.init(); central = CBCentralManager(delegate: self, queue: .main); loadHistory()
+        if let data = UserDefaults.standard.data(forKey: "afu.repeatability.reports"),
+           let reports = try? JSONDecoder().decode([RepeatabilityReport].self, from: data) { repeatReports = reports }
+        log("ScaleManager initialized")
+    }
     func startScan() {
+        if activePeripheral?.state == .connected {
+            isScanning = false
+            connectionState = isMeasuring ? .measuring : .connected
+            return
+        }
+        if activePeripheral?.state == .connecting { return }
         discoveredDevices = []
         isScanning = true
         guard central.state == .poweredOn else {
@@ -96,6 +150,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         discoveredDevices = []
     }
     private func finishMeasurement() {
+        guard repeatCapture == nil else { return }
         guard liveWeight > 0, let profile else { return }
         guard !hasSavedMeasurement else { return }
         hasSavedMeasurement = true
@@ -167,7 +222,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     }
     func assignUnrecognizedMeasurement(to member: FamilyMember) {
         guard let measurement = currentMeasurement, let index = history.firstIndex(where: { $0.id == measurement.id }) else { return }
-        let updated = BodyAlgorithm.measure(
+        var updated = BodyAlgorithm.measure(
             id: measurement.id,
             date: measurement.date,
             weight: measurement.weight,
@@ -177,6 +232,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
             rawADCs: measurement.rawADCs,
             normalizedImpedances: measurement.normalizedImpedances
         )
+        updated.tags = measurement.tags; updated.note = measurement.note
         currentMeasurement = updated; history[index] = updated; saveHistory()
     }
     private func saveHistory() { if let data = try? JSONEncoder().encode(history) { UserDefaults.standard.set(data, forKey: "afu.scale.history") } }
@@ -270,6 +326,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         isStable = false
         isMeasuring = false
         hasSavedMeasurement = false
+        repeatCapture?.disconnect()
         if UserDefaults.standard.bool(forKey: "afu.hasPairedScale") {
             log("[BLE] Restarting scan after disconnection...")
             startScan()
@@ -384,6 +441,8 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         log("[BLE] Successfully parsed packet of type: \(packet.type)")
         switch packet.type {
         case .weight:
+            repeatCapture?.receiveWeight(packet.weight, stable: packet.stable)
+            collectRepeatCheck()
             let wasMeasuring = isMeasuring
             liveWeight = packet.weight
             isStable = packet.stable
@@ -409,6 +468,8 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         case .impedance:
             let packetWeight = packet.adcWeight > 0 ? packet.adcWeight : liveWeight
             let normalized = AFUPacket.normalizeImpedances(packet.adcs, weight: packetWeight)
+            repeatCapture?.receiveADCs(raw: packet.adcs, impedances: normalized, packetWeight: packet.adcWeight)
+            collectRepeatCheck()
             rawADCs = packet.adcs
             normalizedImpedances = normalized
             let preferredIndex = UserDefaults.standard.integer(forKey: ImpedanceADCChoice.storageKey)
@@ -427,6 +488,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
             log("[BLE] Impedance packet - raw ADCs: \(packet.adcs), normalized: \(normalized), selected: \(selectedLabel) = \(impedance)")
             if isStable { finishMeasurement() }
         case .history:
+            guard repeatCapture == nil else { return }
             if let item = packet.historyMeasurement(profile: profile, history: history) {
                 history.insert(item, at: 0)
                 saveHistory()

@@ -68,6 +68,58 @@ struct TrendsBackupChecks {
             memberID: primary.id, memberName: dangerousName.name)
         let escaped = MeasurementBackup(primary: primary, members: [], measurements: [dangerousRecord], references: []).csv()
         assert(escaped.contains("\"'=SUM(1,2)\""))
+        var capture = RepeatabilityCapture(member: primary)
+        capture.receiveWeight(60, stable: true)
+        capture.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 60)
+        assert(!capture.captureIfReady(), "must observe step off before first sample")
+        for _ in 0..<3 {
+            capture.receiveWeight(0, stable: true)
+            capture.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 60)
+            assert(!capture.captureIfReady(), "ADC without on-scale weight cannot capture")
+            capture.receiveWeight(60, stable: false)
+            capture.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 70)
+            capture.receiveWeight(60, stable: true)
+            assert(!capture.captureIfReady(), "inconsistent packet weight rejected")
+            capture.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 60)
+            assert(capture.captureIfReady())
+            assert(!capture.captureIfReady(), "duplicate stable packets cannot add a repeat")
+        }
+        let report = RepeatabilityReport(id: UUID(), date: start, measurements: capture.measurements)
+        assert(!report.hasLargeVariation)
+        let varied = RepeatabilityReport(id: UUID(), date: start,
+            measurements: [measurement(0, 60), measurement(0, 60), measurement(0, 60.3)])
+        assert(varied.hasLargeVariation, "weight spread over 0.2 kg is flagged")
+        var variedADC = a
+        variedADC.normalizedImpedances = [540, 510]
+        assert(RepeatabilityReport(id: UUID(), date: start, measurements: [a, a, variedADC]).hasLargeVariation)
+        var experimentalBackup = backup
+        experimentalBackup.repeatChecks = [report]
+        let restoredExperiment = try MeasurementBackup.decode(experimentalBackup.encoded())
+        assert(restoredExperiment.repeatChecks == [report])
+        assert(experimentalBackup.merged(with: experimentalBackup, replaceConflicts: false).repeatChecks?.count == 1)
+        var reconnect = RepeatabilityCapture(member: primary)
+        reconnect.receiveWeight(0, stable: true)
+        reconnect.receiveWeight(60, stable: true)
+        reconnect.disconnect()
+        reconnect.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 60)
+        assert(!reconnect.captureIfReady(), "disconnect invalidates pending cycle")
+        var shifting = RepeatabilityCapture(member: primary)
+        shifting.receiveWeight(0, stable: true)
+        shifting.receiveWeight(60, stable: false)
+        shifting.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 60)
+        shifting.receiveWeight(61, stable: true)
+        assert(!shifting.captureIfReady(), "weight shift invalidates previously received ADCs")
+        var tagged = a
+        tagged.tags = [MeasurementTag.morning.rawValue]
+        tagged.note = "test note"
+        let annotatedBackup = MeasurementBackup(primary: primary, members: [], measurements: [tagged], references: [])
+        let restoredAnnotation = try MeasurementBackup.decode(annotatedBackup.encoded())
+        assert(restoredAnnotation.measurements.first?.note == "test note")
+        var oldVersionData = backup
+        oldVersionData.repeatChecks = nil
+        let decodedOld = try MeasurementBackup.decode(oldVersionData.encoded())
+        assert(decodedOld.repeatChecks == nil, "older backup files remain readable")
         print("PASS: JSON round-trip, repeat/merge/conflict import, schema and UUID validation, reference integrity, CSV escaping, daily median, seven-day trend and ADC separation")
+        print("PASS: three-cycle gating, duplicate packets, stale ADC rejection, disconnect invalidation, report backup and annotations")
     }
 }

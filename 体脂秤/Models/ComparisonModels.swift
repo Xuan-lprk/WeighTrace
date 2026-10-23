@@ -174,9 +174,11 @@ final class ComparisonStore: ObservableObject {
 
         let timeDifference = abs(reference.measuredAt.timeIntervalSince(measurement.date))
         let weightDifference = abs(reference.weight - measurement.weight)
-        let isQualified = timeDifference <= 30 * 60 && weightDifference <= 0.2
+        let isQualified = measurement.profileSnapshot != nil && timeDifference <= 30 * 60 && weightDifference <= 0.2
         let reason: String
-        if timeDifference > 30 * 60 {
+        if measurement.profileSnapshot == nil {
+            reason = String(localized: "缺少测量时资料快照，仅供查看，不参与推荐")
+        } else if timeDifference > 30 * 60 {
             reason = String(localized: "阿福与本地测量相隔超过 30 分钟")
         } else if weightDifference > 0.2 {
             reason = String(localized: "两次体重相差超过 0.2 kg")
@@ -204,13 +206,13 @@ final class ComparisonStore: ObservableObject {
         .sorted { $0.reference.measuredAt > $1.reference.measuredAt }
     }
 
-    func summary(for comparisons: [ADCComparison]) -> ComparisonSummary {
+    func summary(for comparisons: [ADCComparison], totalCount: Int? = nil) -> ComparisonSummary {
         let qualified = comparisons.filter(\.isQualified)
         let dates = Set(qualified.map {
             Calendar.current.startOfDay(for: $0.reference.measuredAt)
         })
         return ComparisonSummary(
-            totalCount: references.count,
+            totalCount: totalCount ?? references.count,
             qualifiedCount: qualified.count,
             distinctQualifiedDates: dates.count,
             adc1: statistics(for: qualified.map(\.adc1Error)),

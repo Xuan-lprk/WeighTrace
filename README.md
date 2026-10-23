@@ -17,6 +17,7 @@
 - 本人资料、家庭成员匹配和本地历史；
 - 趋势页按成员、30 天 / 90 天 / 全部及体重 / 体脂 / BMI 筛选，展示原始点、每日体重中位数与 7 日趋势；
 - JSON 完整备份与冲突预览合并恢复，CSV 分析导出（详见 [趋势与备份](docs/TRENDS_BACKUP.md)）；
+- 三次测量重复性检查、按成员的 ADC 差异图、自定义首页、条件标签与备注（详见 [测量工具](docs/MEASUREMENT_TOOLS.md)）；
 - 支持 iPhone、iPad 和 Mac（Mac Catalyst）前台蓝牙测量；
 - iPhone/iPad 可选写入 Apple 健康：
   - 体重；

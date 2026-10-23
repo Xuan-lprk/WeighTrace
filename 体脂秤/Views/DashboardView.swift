@@ -3,25 +3,45 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject private var scale: ScaleManager
     @EnvironmentObject private var profile: UserProfile
+    @AppStorage("afu.dashboard.metrics") private var selectedMetrics = "bodyFat,bmi,water"
+    private var displayedMeasurement: BodyMeasurement? { scale.currentMeasurement ?? scale.history.first }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
+            ScrollView { VStack(spacing: 12) {
                 weightCard
+                if scale.repeatCapture != nil {
+                    NavigationLink("三次检查进行中，点击查看进度") { RepeatabilityView() }
+                        .padding().background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+                }
                 
-                if let measurement = scale.currentMeasurement {
+                if let measurement = displayedMeasurement, !scale.isMeasuring {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(measurement.memberName ?? String(localized: "本人")).font(.headline)
+                        if let previous = scale.history.filter({ $0.memberID == measurement.memberID && $0.date < measurement.date }).max(by: { $0.date < $1.date }) {
+                            Text(String(format: String(localized: "较上次体重 %+.2f kg"), measurement.weight - previous.weight))
+                                .font(.subheadline)
+                        }
+                        Text(measurement.adcIndex.map { String(format: String(localized: "本次采用 ADC %lld，双路数据按实际接收保存"), $0 + 1) } ?? String(localized: "这条记录未保存 ADC 选择"))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
                     metricGrid(measurement)
+                    NavigationLink("查看完整测量详情") { MeasurementDetailView(measurement: measurement) }
                 } else {
                     measuringHint
                 }
-                Spacer()
+                NavigationLink("三次测量检查") { RepeatabilityView() }
             }
             .padding()
+            }
             .onAppear {
                 scale.startScan()
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink { DashboardSettingsView() } label: { Label("自定义首页", systemImage: "slider.horizontal.3") }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { scale.startScan() } label: {
                         Image(systemName: "antenna.radiowaves.left.and.right")
@@ -68,12 +88,12 @@ struct DashboardView: View {
             
             // Weight display
             VStack(spacing: 4) {
-                Text(scale.isStable ? String(localized: "测量完成") : (scale.liveWeight > 0 ? String(localized: "正在测量...") : String(localized: "请赤脚站上体脂秤")))
+                    Text(scale.liveWeight <= 0 && displayedMeasurement != nil ? String(localized: "最近记录") : (scale.isStable ? String(localized: "测量完成") : (scale.liveWeight > 0 ? String(localized: "正在测量...") : String(localized: "请赤脚站上体脂秤"))))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(String(format: "%.2f", scale.liveWeight))
+                    Text(String(format: "%.2f", scale.liveWeight > 0 ? scale.liveWeight : (displayedMeasurement?.weight ?? 0)))
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                     Text("kg").font(.title3).fontWeight(.semibold)
                 }
@@ -86,14 +106,14 @@ struct DashboardView: View {
 
     private func metricGrid(_ m: BodyMeasurement) -> some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            MetricTile(title: "BMI", valueString: String(format: "%.2f", m.bmi), icon: "figure.stand")
-            MetricTile(title: "体脂率/量", valueString: String(format: "%.1f%% / %.1f kg", m.bodyFat, m.bodyFatMass), icon: "drop.fill")
-            MetricTile(title: "肌肉率/量", valueString: String(format: "%.1f%% / %.1f kg", m.musclePercent, m.muscle), icon: "figure.strengthtraining.traditional")
-            MetricTile(title: "骨骼肌率/量", valueString: String(format: "%.1f%% / %.1f kg", m.skeletalMusclePercent, m.skeletalMuscleMass), icon: "figure.core.training")
-            MetricTile(title: "体水分率/量", valueString: String(format: "%.1f%% / %.1f kg", m.water, m.waterMass), icon: "water.waves")
-            MetricTile(title: "蛋白质率/量", valueString: String(format: "%.1f%% / %.1f kg", m.protein, m.proteinMass), icon: "leaf.fill")
-            MetricTile(title: "骨量率/量", valueString: String(format: "%.1f%% / %.1f kg", m.boneMassPercent, m.boneMass), icon: "shield.fill")
-            MetricTile(title: "皮下脂肪率/量", valueString: String(format: "%.1f%% / %.1f kg", m.subcutaneousFatPercent, m.subcutaneousFatMass), icon: "drop.triangle.fill")
+            ForEach(selectedMetrics.split(separator: ",").compactMap { DashboardMetric(rawValue: String($0)) }) { metric in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(metric.title).font(.caption)
+                    Text(metric.value(m)).font(.title2.bold())
+                    Text(metric.source).font(.caption2).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding()
+                    .background(.teal.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
+            }
         }
     }
 

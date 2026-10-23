@@ -9,6 +9,7 @@ struct MeasurementBackup: Codable {
     let members: [FamilyMember]
     let measurements: [BodyMeasurement]
     let references: [OfficialReferenceRecord]
+    var repeatChecks: [RepeatabilityReport]? = nil
 
     func encoded() throws -> Data {
         let encoder = JSONEncoder()
@@ -26,6 +27,13 @@ struct MeasurementBackup: Codable {
 
     func validate() throws {
         guard format == "afu-scale-backup", schemaVersion == 1 else { throw BackupError.version }
+        let checks = repeatChecks ?? []
+        guard Set(checks.map(\.id)).count == checks.count else { throw BackupError.invalid }
+        for check in checks {
+            guard check.measurements.count == 3, check.measurements.allSatisfy(\.hasDualADC),
+                  Set(check.measurements.map(\.memberID)).count == 1 else { throw BackupError.invalid }
+            try Self(primary: primary, members: members, measurements: check.measurements, references: []).validate()
+        }
         let allMembers = [primary] + members
         guard primary.id == Self.primaryID,
               Set(allMembers.map(\.id)).count == allMembers.count,
@@ -80,9 +88,11 @@ struct MeasurementBackup: Codable {
                 if replaceConflicts { mergedReferences[index] = reference }
             } else { mergedReferences.append(reference) }
         }
-        return Self(primary: replaceConflicts ? incoming.primary : primary,
+        var result = Self(primary: replaceConflicts ? incoming.primary : primary,
                     members: merge(members, incoming.members), measurements: mergedMeasurements,
                     references: mergedReferences)
+        result.repeatChecks = merge(repeatChecks ?? [], incoming.repeatChecks ?? [])
+        return result
     }
 
     func preview(against local: Self) -> [BackupPreviewRow] {
@@ -103,7 +113,8 @@ struct MeasurementBackup: Codable {
         }
         return [row(String(localized: "本人资料"), [primary], [local.primary]),
                 row(String(localized: "家庭成员"), members, local.members),
-                row(String(localized: "测量记录"), measurements, local.measurements), referenceRow]
+                row(String(localized: "测量记录"), measurements, local.measurements), referenceRow,
+                row(String(localized: "检查报告"), repeatChecks ?? [], local.repeatChecks ?? [])]
     }
 
     func conflictDetails(against local: Self) -> [BackupConflict] {
@@ -137,6 +148,13 @@ struct MeasurementBackup: Codable {
                     incoming: "\(reference.measuredAt.formatted()) · \(reference.weight) kg · \(reference.bodyFat)% · \(reference.note ?? "")"))
             }
         }
+        for report in repeatChecks ?? [] {
+            if let old = (local.repeatChecks ?? []).first(where: { $0.id == report.id }), old != report {
+                conflicts.append(BackupConflict(id: report.id, title: String(localized: "检查报告"),
+                    local: old.date.formatted() + " · " + old.measurements.map { String($0.weight) }.joined(separator: ", "),
+                    incoming: report.date.formatted() + " · " + report.measurements.map { String($0.weight) }.joined(separator: ", ")))
+            }
+        }
         return conflicts
     }
 
@@ -153,7 +171,7 @@ struct MeasurementBackup: Codable {
                       "muscle_kg", "water_percent", "protein_percent", "bone_kg", "adc_index_1_based",
                       "adc1_raw", "adc2_raw", "impedance1_ohm", "impedance2_ohm", "selected_impedance_ohm",
                       "algorithm", "profile_height_cm", "profile_sex", "profile_birth_date",
-                      "reference_id", "reference_time", "reference_weight_kg", "reference_body_fat_percent", "reference_note"]
+                      "reference_id", "reference_time", "reference_weight_kg", "reference_body_fat_percent", "reference_note", "tags", "note"]
         var lines = [header.joined(separator: ",")]
         for record in measurements.sorted(by: { $0.date < $1.date }) {
             let reference = refs[record.id]
@@ -166,7 +184,8 @@ struct MeasurementBackup: Codable {
                 number(record.impedance), record.algorithmVersion ?? "", number(record.profileSnapshot?.height),
                 record.profileSnapshot?.sex.rawValue ?? "", record.profileSnapshot.map { formatter.string(from: $0.birthDate) } ?? "",
                 reference?.id.uuidString ?? "", reference.map { formatter.string(from: $0.measuredAt) } ?? "",
-                number(reference?.weight), number(reference?.bodyFat), reference?.note ?? ""]
+                number(reference?.weight), number(reference?.bodyFat), reference?.note ?? "",
+                (record.tags ?? []).joined(separator: "|"), record.note ?? ""]
             lines.append(values.map(cell).joined(separator: ","))
         }
         return "\u{FEFF}" + lines.joined(separator: "\r\n") + "\r\n"

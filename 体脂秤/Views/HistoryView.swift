@@ -4,12 +4,20 @@ struct HistoryView: View {
     @EnvironmentObject private var scale: ScaleManager
     @EnvironmentObject private var comparisonStore: ComparisonStore
     @State private var deletionError: String?
+    @State private var selectedTag = "all"
+    private var filteredHistory: [BodyMeasurement] {
+        scale.history.filter { selectedTag == "all" || ($0.tags ?? []).contains(selectedTag) }
+    }
 
     var body: some View {
         NavigationStack {
             List {
+                Picker("测量条件", selection: $selectedTag) {
+                    Text("全部").tag("all")
+                    ForEach(MeasurementTag.allCases) { Text($0.title).tag($0.rawValue) }
+                }
                 if scale.history.isEmpty { EmptyStateView(title: "还没有测量记录", icon: "calendar.badge.clock", message: "完成首次测量后，记录将保存在这里。") }
-                ForEach(scale.history) { item in
+                ForEach(filteredHistory) { item in
                     NavigationLink(destination: MeasurementDetailView(measurement: item)) {
                         HStack {
                             VStack(alignment: .leading) {
@@ -36,7 +44,7 @@ struct HistoryView: View {
                     }
                 }.onDelete { offsets in
                     let measurements = offsets.compactMap { index in
-                        scale.history.indices.contains(index) ? scale.history[index] : nil
+                        filteredHistory.indices.contains(index) ? filteredHistory[index] : nil
                     }
                     Task {
                         for measurement in measurements {
@@ -93,6 +101,7 @@ struct MeasurementDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+            MeasurementAnnotationLink(measurement: measurement)
             // Combined Header, Weight, BMI, and Impedance Card
             VStack(spacing: 12) {
                 HStack {

@@ -10,7 +10,7 @@ enum ReferenceImportMethod: String, Codable {
     case screenshotOCR = "screenshot_ocr"
 }
 
-struct OfficialReferenceRecord: Identifiable, Codable {
+struct OfficialReferenceRecord: Identifiable, Codable, Equatable {
     let id: UUID
     let measurementID: UUID
     let measuredAt: Date
@@ -108,6 +108,11 @@ final class ComparisonStore: ObservableObject {
 
     init() {
         load()
+    }
+
+    func restoreBackup(_ records: [OfficialReferenceRecord]) {
+        references = records.sorted { $0.measuredAt > $1.measuredAt }
+        save()
     }
 
     func upsert(_ reference: OfficialReferenceRecord) {

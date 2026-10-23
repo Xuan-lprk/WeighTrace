@@ -14,16 +14,13 @@ struct ContentView: View {
     @State private var suggestedWeight: Double?
 
     var body: some View {
-        Group {
-            if hasPairedScale {
-                TabView(selection: $tab) {
-                    DashboardView().tabItem { Label("测量", systemImage: "waveform.path.ecg") }.tag(0)
-                    HistoryView().tabItem { Label("历史", systemImage: "chart.line.uptrend.xyaxis") }.tag(1)
-                    ProfileView().tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(2)
-                }
-            } else {
-                PairingView()
-            }
+        TabView(selection: $tab) {
+            Group {
+                if hasPairedScale { DashboardView() } else { PairingView() }
+            }.tabItem { Label("测量", systemImage: "waveform.path.ecg") }.tag(0)
+            TrendsView().tabItem { Label("趋势", systemImage: "chart.xyaxis.line") }.tag(3)
+            HistoryView().tabItem { Label("历史", systemImage: "chart.line.uptrend.xyaxis") }.tag(1)
+            ProfileView().tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(2)
         }
         .tint(.teal)
         .onAppear {
@@ -40,8 +37,8 @@ struct ContentView: View {
 #endif
         }
         .onAppear { promptForInitialMemberIfNeeded() }
-        .onChange(of: hasPairedScale) { _ in promptForInitialMemberIfNeeded() }
-        .onChange(of: scale.unrecognizedWeight) { weight in
+        .onChange(of: hasPairedScale) { _, _ in promptForInitialMemberIfNeeded() }
+        .onChange(of: scale.unrecognizedWeight) { _, weight in
             guard let weight else { return }
             suggestedWeight = weight
             showingUnknownMember = true

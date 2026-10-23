@@ -157,6 +157,14 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         return additions.count
     }
     func clearUnrecognizedWeight() { unrecognizedWeight = nil }
+    // File restores are local only: never call HealthKit.save or open a measurement review.
+    func restoreBackup(_ records: [BodyMeasurement]) {
+        history = records.sorted { $0.date > $1.date }
+        if let currentMeasurement, let restored = history.first(where: { $0.id == currentMeasurement.id }) {
+            self.currentMeasurement = restored
+        }
+        saveHistory()
+    }
     func assignUnrecognizedMeasurement(to member: FamilyMember) {
         guard let measurement = currentMeasurement, let index = history.firstIndex(where: { $0.id == measurement.id }) else { return }
         let updated = BodyAlgorithm.measure(

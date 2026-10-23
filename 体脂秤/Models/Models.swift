@@ -8,7 +8,7 @@ enum ImpedanceADCChoice: Int {
     case second = 1
 }
 
-struct MeasurementProfileSnapshot: Codable {
+struct MeasurementProfileSnapshot: Codable, Equatable {
     let sex: Sex
     let height: Double
     let birthDate: Date
@@ -31,7 +31,7 @@ struct MeasurementProfileSnapshot: Codable {
     }
 }
 
-struct FamilyMember: Identifiable, Codable {
+struct FamilyMember: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
     var sex: Sex
@@ -42,7 +42,7 @@ struct FamilyMember: Identifiable, Codable {
     var age: Int { Calendar.current.dateComponents([.year], from: birthDate, to: .now).year ?? 28 }
 }
 
-struct BodyMeasurement: Identifiable, Codable {
+struct BodyMeasurement: Identifiable, Codable, Equatable {
     let id: UUID
     let date: Date
     let weight: Double

@@ -14,6 +14,9 @@ struct ProfileView: View {
     @State private var showingAddMember = false
     var body: some View {
         NavigationStack { Form {
+            Section {
+                NavigationLink("备份与导出") { BackupView() }
+            }
             Section("我的设备") {
                 HStack { Image(systemName: "scalemass").foregroundStyle(.teal); VStack(alignment: .leading) { Text(scale.deviceName ?? String(localized: "AFU Welland 体脂秤")); Text(scale.connectionState.title).font(.caption).foregroundStyle(.secondary) }; Spacer(); Circle().fill(scale.connectionState.color).frame(width: 9, height: 9) }
                 Button { scale.startScan() } label: { Label("重新连接", systemImage: "arrow.clockwise") }
@@ -39,7 +42,7 @@ struct ProfileView: View {
             } header: {
                 Text("本地数据")
             } footer: {
-                Text("Mac 版不访问 Apple 健康。个人资料、双 ADC 和测量历史只保存在当前 Mac 的 App 容器中，不会自动同步到其他设备；删除数据容器后无法恢复。")
+                Text("Mac 版不访问 Apple 健康。个人资料、双 ADC 和测量历史保存在当前 Mac；可通过 JSON 备份迁移，删除数据容器前请先导出备份。")
             }
 #else
             Section {

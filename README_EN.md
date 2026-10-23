@@ -15,6 +15,8 @@ This fork is based on [maoziban/smart-body-scale-IOS](https://github.com/maoziba
 - Preserves both ADC values sent by the scale and lets you select ADC 1 or ADC 2 for estimation.
 - Estimates body fat from weight and impedance, then displays additional metrics derived proportionally from body fat.
 - Supports a personal profile, household member matching, and local measurement history.
+- Trends filter by member, 30/90 days or all time, and weight/body fat/BMI, with raw readings, daily weight medians, and a 7-day trend.
+- Full JSON backup and merge restoration with conflict previews, plus CSV analysis export. See [Trends and Backup](docs/TRENDS_BACKUP.md) (Chinese).
 - Supports foreground Bluetooth measurements on iPhone, iPad, and Mac through Mac Catalyst.
 - On iPhone and iPad, optionally writes the following data to Apple Health:
   - Weight

@@ -12,6 +12,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.4.app
+      - name: Check trends and backup data
+        run: bash scripts/check-trends-backup.sh
       - name: Build iOS
         run: >
           xcodebuild

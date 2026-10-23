@@ -23,6 +23,13 @@ import SwiftUI
     }
     var primaryMember: FamilyMember { FamilyMember(id: primaryID, name: String(localized: "本人"), sex: sex, height: height, birthDate: birthDate, referenceWeight: 60) }
     func addMember(_ member: FamilyMember) { members.append(member); saveMembers() }
+    func restoreBackup(primary: FamilyMember, family: [FamilyMember]) {
+        sex = primary.sex
+        height = primary.height
+        birthDate = primary.birthDate
+        members = family
+        saveMembers()
+    }
     func removeMembers(at offsets: IndexSet) { members.remove(atOffsets: offsets); saveMembers() }
     func matchedMember(for weight: Double, history: [BodyMeasurement]) -> FamilyMember {
         let candidates = [primaryMember] + members

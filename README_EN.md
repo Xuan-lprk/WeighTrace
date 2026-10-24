@@ -1,8 +1,48 @@
-# AFU-WL Body Composition Scale for iOS and macOS
+# Ant Afu Body Composition Scale Client for iOS and macOS
 
 English | [简体中文](README.md)
 
-An unofficial client built with SwiftUI and CoreBluetooth for reading selected AFU-WL / Welland body composition scales without connecting to Alibaba servers. The iPhone and iPad versions offer optional Apple Health integration; the Mac version keeps a local history.
+Connect a supported scale, record your weight, and follow trends without a vendor account. Supports selected AFU-WL / Welland scales, with optional Apple Health integration on iPhone/iPad and local history on Mac.
+
+[Download the Mac test build](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases) · [Mac installation guide](docs/MAC_INSTALL.md) (Chinese) · [Changelog](docs/CHANGELOG.md) (Chinese) · [Report an issue](https://github.com/Xuan-lprk/smart-body-scale-IOS/issues)
+
+> **Check your model first: the currently verified device is `AFU-WL-TZ-A1` (the one sold for one cent).** Not every Ant Afu, Welland, or other brand scale can connect. Weight is measured by the scale; body composition is estimated locally, may differ from the vendor app, and is not intended for medical decisions.
+
+## Download and Install
+
+| Device | Installation | Apple Health |
+|---|---|---|
+| Mac: macOS 15.6+, Apple silicon or Intel | Open [Releases](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases), expand **Assets**, and download `AFU-Scale-Mac-…-test.dmg` | Not available; history stays on the Mac |
+| iPhone / iPad: iOS / iPadOS 18.6+ | Currently requires building with Xcode on a Mac; see [Building from Source](#building-from-source) | Optional read/write access |
+| Android | No app yet; I may port it if there is interest | Not applicable |
+
+Mac users **do not need Xcode or a developer account**. Download the `.dmg` installer, not the `Source code (zip)` shown on the page. See the [Mac installation guide](docs/MAC_INSTALL.md).
+
+1. Open the DMG and drag “体脂秤” into Applications.
+2. Launch it from Applications. The test build is not notarized by Apple. If macOS blocks it, verify the source and follow the system's Privacy & Security instructions. Do not disable system security protections; if macOS reports malware, stop and contact the publisher.
+3. Allow Bluetooth, quit other apps/devices connected to the scale, wake the scale, and select it in the app.
+
+There is currently no App Store or TestFlight installation option. If building the iPhone/iPad version yourself is inconvenient, you can watch the repository for future releases or use the official client.
+
+## Your First Measurement
+
+1. Enter your height, birth date, and sex, which affect BMI and composition estimates.
+2. Place the scale on a hard, level floor. Stand barefoot and wait for both weight and impedance acquisition to finish.
+3. Review the result and keep or delete it. Use consistent conditions and the same ADC for long-term trends.
+4. Save a JSON backup under the profile's backup/export section. **Local history is not an automatic cloud backup**, and Mac and iPhone records do not sync automatically.
+
+If the scale is missing, check Bluetooth permission, wake the scale, and make sure the vendor app, another device, or the CLI is not occupying its connection. More checks are listed under [Building from Source](#building-from-source).
+
+## What You Can Do
+
+- **Track daily measurements:** live weight, result review, household members, and trends.
+- **Compare estimates:** preserve both ADCs and compare them with manually entered or locally OCR-extracted Afu references.
+- **Keep control of your records:** JSON backup/restore, CSV export, and optional Apple Health integration with source and possible-duplicate inspection on iPhone/iPad.
+- **Try measurement tools:** repeatability checks, animated history playback, and assisted weighing for pets or luggage. Assisted weights are rough differences between two readings, not a replacement for a dedicated scale.
+
+See the detailed feature list and linked guides below. The project is still evolving; a successful build is not a substitute for release-specific hardware and cross-device testing.
+
+## Project and Credits
 
 > This project is based on community reverse-engineering research and is not affiliated with or authorized by Ant Afu, Welland, Fitdays, Icomon, or Apple.
 
@@ -52,7 +92,7 @@ Formula references:
 
 Weight is measured directly by the scale, and the ADC values are sent directly by the scale. Impedance is derived through protocol conversion. Body fat, water, muscle, bone mass, and other body composition values are local formula estimates and must not replace medical examinations.
 
-Ant Afu's body composition results are also consumer-grade estimates. You can switch between ADC 1 and ADC 2 to reduce the difference from the official results, but being closer to the official result does not mean being medically more accurate. That said, selecting the ADC with the smaller difference is still recommended, since Alibaba's result may be closer to the actual value.
+ADC comparisons show differences between the two local estimates and Afu reference results. Closer agreement with the official result does not establish greater accuracy against true body fat. Do not select an ADC based on a single result or treat comparison statistics as medical validation.
 
 For long-term trend tracking, use the same ADC consistently and measure under similar conditions.
 
@@ -66,7 +106,7 @@ For long-term trend tracking, use the same ADC consistently and measure under si
 
 Other models and firmware versions may use different advertisements or packet formats. See the [protocol notes](docs/PROTOCOL.md) for detailed reverse-engineering findings.
 
-## Requirements
+## Development Requirements
 
 - Xcode 26.4 or later
 - iOS / iPadOS 18.6 or later
@@ -76,7 +116,7 @@ Other models and firmware versions may use different advertisements or packet fo
 
 The simulator can be used to compile the project and inspect the interface, but it cannot perform real Bluetooth measurements.
 
-## Running the App
+## Building from Source
 
 1. Clone the repository and open `体脂秤.xcodeproj`.
 2. Select the app target and choose your own team under **Signing & Capabilities**.
@@ -94,7 +134,7 @@ If the scale does not appear, check the following:
 
 ## Apple Health
 
-Apple Health features are shown only on iPhone and iPad. The Mac version does not access HealthKit; it stores measurements only in the Mac app's local history.
+Apple Health features are shown only on iPhone and iPad. The Mac version does not support HealthKit access; measurements are stored only in the Mac app's local history.
 
 Open **Profile → Apple Health** to enable synchronization and select the metrics to write. The app automatically writes only new live measurements assigned to the primary user. It does not upload existing history or household member records in bulk.
 
@@ -104,11 +144,9 @@ Open **Profile → Cross-Scale Data** to authorize reading weight, BMI, body fat
 
 ## Privacy
 
-Profiles and measurement history remain in the app sandbox. Mac update checks request public release information from GitHub without uploading measurements. When Apple Health integration is enabled, selected data is passed to HealthKit; whether it syncs through iCloud depends on the user's system settings. See [PRIVACY.md](docs/PRIVACY.md) for the complete statement.
+All profile and history data is stored in the app sandbox and measurement data is not uploaded. Mac update checks access only GitHub's public release information. When Apple Health integration is enabled, selected data is passed to HealthKit; whether it syncs through iCloud depends on the user's system settings. See [PRIVACY.md](docs/PRIVACY.md) for the complete statement.
 
-Run `bash scripts/package-mac.sh` to create a local test DMG in `dist/`. Recipients do not need Xcode. See [MAC_INSTALL.md](docs/MAC_INSTALL.md). Updates are checked in the app and installed manually from the release download page.
-
-Before sharing issues or logs publicly, remove names, dates of birth, weights, and Bluetooth device identifiers.
+Run `bash scripts/package-mac.sh` to create a local test DMG in `dist/`. Friends do not need Xcode. See [MAC_INSTALL.md](docs/MAC_INSTALL.md). The app can check for updates and open the download page, but updates must still be installed manually.
 
 An Android app has not been implemented. The proposed BLE, local-storage, and optional Health Connect approach is documented in [ANDROID_PORT.md](docs/ANDROID_PORT.md).
 

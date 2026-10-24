@@ -1,8 +1,46 @@
-# AFU-WL 体脂秤 iOS / macOS 客户端
+# 蚂蚁阿福体脂秤 iOS / macOS 客户端
 
 简体中文 | [English](README_EN.md)
 
-一个使用 SwiftUI 和 CoreBluetooth 编写的非官方客户端，用于在不连接阿里服务器的情况下读取特定 AFU-WL / Welland 体脂秤。iPhone/iPad 可选写入 Apple 健康；Mac 版使用本地历史。
+用自己的设备连接体脂秤，记录体重、查看趋势，不需要注册厂商账号。支持特定 AFU-WL / Welland 体脂秤，iPhone/iPad 可选写入 Apple 健康，Mac 保存本地历史。
+
+[下载 Mac 测试版](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases)  · [更新日志](docs/CHANGELOG.md) · [反馈问题](https://github.com/Xuan-lprk/smart-body-scale-IOS/issues)
+
+> **先确认型号：目前已验证的是 `AFU-WL-TZ-A1`（即一分钱购买的那款）。** 不是所有阿福、沃莱或其他品牌的体脂秤都能连接。体重来自秤的测量，体脂等身体成分是本地估算，不保证与厂商 App 一致，也不用于医疗判断。
+
+## 下载与安装
+
+| 你的设备 | 怎么安装 | Apple 健康 |
+|---|---|---|
+| Mac：macOS 15.6+，Apple 芯片或 Intel | 在 [Releases 发布页](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases) 展开 **Assets**，下载 `AFU-Scale-Mac-…-test.dmg` | 不支持；记录保存在 Mac 本地 |
+| iPhone / iPad：iOS / iPadOS 18.6+ | 当前需使用 Mac 和 Xcode 自行构建；见下方[开发者运行说明](#开发者构建与运行) | 可选读取与写入 |
+| Android | 暂无 App，有需求我再移植 | 不适用 |
+
+Mac 用户**不需要 Xcode，也不需要开发者账号**。下载的是 `.dmg` 安装包，不是页面上的 `Source code (zip)` 源码。[Mac 安装说明](docs/MAC_INSTALL.md)
+
+
+
+目前没有提供 App Store 或 TestFlight 安装入口。iPhone/iPad 用户如果不方便自行构建，可以先关注仓库后续发布，或者使用官方客户端。
+
+## 第一次称重
+
+1. 先填写本人的身高、生日和性别；这些资料会影响 BMI 和身体成分估算。
+2. 将秤放在坚硬平整的地面，光脚站稳，等待体重与阻抗采集完成。
+3. 在测量预览中查看结果，保留或删除本次记录。日常观察趋势时，尽量固定时间、测量条件和所选 ADC。
+4. 在“我的 → 备份与导出”保存一份 JSON 备份。**本地记录不等于自动云备份**；Mac 和手机也不会自动互相同步。
+
+搜不到秤？先检查蓝牙权限、秤是否亮屏，以及手机厂商 App、另一台设备或 CLI 是否占用了连接。更完整的排查见下方[开发者构建与运行](#开发者构建与运行)。
+
+## 它能帮你做什么
+
+- **日常记录**：实时称重、测量预览、家庭成员和历史趋势。
+- **比较算法**：保留双 ADC，通过手动录入或本机识别阿福截图，对比两路估算与参考结果。
+- **管理自己的数据**：JSON 备份恢复、CSV 导出；iPhone/iPad 可选接入 Apple 健康，查看其他来源和疑似重复记录。
+- **小工具**：三次重复性检查、动态历史回放，以及宠物、行李等抱物称重。抱物结果是两次称重相减的粗略值，不是专用宠物秤或包裹秤。
+
+这些功能的详细范围见下面的列表和各功能文档。当前项目仍在迭代，发布前的实体秤与跨设备验收不能由编译通过替代。
+
+## 项目与来源
 
 > 本项目来自社区逆向研究，与蚂蚁阿福、沃莱、Fitdays、Icomon 或 Apple 没有隶属或授权关系。
 
@@ -52,7 +90,7 @@
 
 体重为秤直接测量，ADC 为秤直接发送；阻抗来自协议换算。体脂、水分、肌肉、骨量等身体成分均为本地公式估算，不应替代医疗检查。
 
-蚂蚁阿福的身体成分结果同样属于消费级估算。可切换 ADC 1 和 ADC 2 来缩小与官方结果的差距，但“更接近官方结果”不代表“医学上更准确”（不过仍建议选择差距较小的 ADC，阿里的结果有可能更接近真实数据）。
+ADC 对比用于观察两路本地估算与阿福参考结果之间的差异；更接近官方结果，不代表更接近真实体脂。不要仅凭某一次结果选择 ADC，也不要把对照统计当作医学准确性验证。
 
 观察长期趋势时，建议固定使用同一个 ADC，并保持相似的测量条件。
 
@@ -66,7 +104,7 @@
 
 其他型号和固件可能使用不同广播或数据格式。详细逆向记录见 [协议笔记](docs/PROTOCOL.md)。
 
-## 环境要求
+## 开发环境要求
 
 - Xcode 26.4 或更高版本；
 - iOS / iPadOS 18.6 或更高版本；
@@ -76,7 +114,7 @@
 
 模拟器可以用于编译和检查界面，但不能完成真实蓝牙测量。
 
-## 运行
+## 开发者构建与运行
 
 1. 克隆仓库并打开 `体脂秤.xcodeproj`。
 2. 选择 App Target，在 **Signing & Capabilities** 中选择自己的 Team。
@@ -94,7 +132,7 @@
 
 ## Apple 健康
 
-Apple 健康功能仅在 iPhone/iPad 版显示。Mac 版不访问 HealthKit，测量结果只写入 Mac 上的 App 本地历史。
+Apple 健康功能仅在 iPhone/iPad 版显示。Mac 版不支持访问 HealthKit，测量结果只写入 Mac 上的 App 本地历史。
 
 在“我的资料 → Apple 健康”中启用同步并选择指标。App 只自动写入归属于“本人”的新实时测量，不会批量上传旧历史或家庭成员记录。
 
@@ -104,11 +142,10 @@ Apple 健康功能仅在 iPhone/iPad 版显示。Mac 版不访问 HealthKit，�
 
 ## 隐私
 
-资料和历史保存在 App 沙盒中。Mac 检查更新会访问 GitHub 的公开版本信息，不上传测量数据。启用 Apple 健康后，所选数据会交给 HealthKit，是否通过 iCloud 同步由用户的系统设置决定。完整说明见 [PRIVACY.md](docs/PRIVACY.md)。
+资料和历史全部保存在 App 沙盒中，不上传测量数据。Mac 检查更新仅会访问 GitHub 的公开版本信息。启用 Apple 健康后，所选数据会交给 HealthKit，是否通过 iCloud 同步由用户的系统设置决定。完整说明见 [PRIVACY.md](docs/PRIVACY.md)。
 
 Mac 测试包使用 `bash scripts/package-mac.sh` 生成，输出到 `dist/`。朋友无需 Xcode，安装说明见 [MAC_INSTALL.md](docs/MAC_INSTALL.md)。当前支持检查更新和下载页入口，安装仍需手动覆盖。
 
-公开 Issue 或日志前，请删除姓名、出生日期、体重和蓝牙设备标识等个人信息。
 
 Android 版暂未实现，已确定的 BLE、本地存储和 Health Connect 移植方法见 [Android 实现路线](docs/ANDROID_PORT.md)。
 

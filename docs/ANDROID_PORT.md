@@ -2,7 +2,7 @@
 
 ## 结论
 
-可以做，而且不需要再逆向一遍秤的协议。最稳妥的第一版是用 **Kotlin + Jetpack Compose** 做原生 Android App，把现有 Swift 项目中的协议解析、测量状态机和身体算法逐段移植。不建议第一版就上 Flutter 或 Kotlin Multiplatform：这个项目最容易出问题的是平台蓝牙行为，原生 API 最容易排查。
+用 **Kotlin + Jetpack Compose** 做原生 Android App，把现有 Swift 项目中的协议解析、测量状态机和身体算法逐段移植。不建议第一版就上 Flutter 或 Kotlin Multiplatform：这个项目最容易出问题的是平台蓝牙行为，原生 API 最容易排查。
 
 Android 版可先只做与 Mac 版相同的闭环：
 

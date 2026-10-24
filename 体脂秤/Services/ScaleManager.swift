@@ -224,7 +224,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     }
     private func finishMeasurement() {
         guard repeatCapture == nil, assistedCapture == nil else { return }
-        guard liveWeight > 0, let profile else { return }
+        guard liveWeight > 0, let profile, profile.isComplete else { return }
         guard !hasSavedMeasurement else { return }
         hasSavedMeasurement = true
         let isNewMember = profile.shouldSuggestNewMember(for: liveWeight, history: history)

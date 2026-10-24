@@ -20,9 +20,10 @@ import Combine
         profile = UserProfile(defaults: store)
         scale = ScaleManager(defaults: store, isDemo: true)
         comparisons = ComparisonStore(defaults: store)
-        profile.sex = .male
-        profile.height = 175
-        profile.birthDate = Calendar.current.date(from: DateComponents(year: 1996, month: 5, day: 12))!
+        profile.completeProfile(
+            sex: .male, height: 175,
+            birthDate: Calendar.current.date(from: DateComponents(year: 1996, month: 5, day: 12))!
+        )
         profile.addMember(FamilyMember(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
             name: String(appLocalized: "演示成员"), sex: .female, height: 164,

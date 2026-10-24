@@ -4,6 +4,9 @@ import SwiftUI
 
 @MainActor final class UserProfile: ObservableObject {
     private let defaults: UserDefaults
+    @Published private(set) var isComplete = false
+    // Internal placeholders only. The onboarding gate never displays or uses them
+    // as a user's profile until all three fields have been explicitly confirmed.
     @Published var sex: Sex = .female { didSet { savePrimaryProfile() } }
     @Published var height: Double = 165 { didSet { savePrimaryProfile() } }
     @Published var birthDate = Calendar.current.date(byAdding: .year, value: -28, to: .now) ?? .now { didSet { savePrimaryProfile() } }
@@ -12,10 +15,12 @@ import SwiftUI
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if let data = defaults.data(forKey: "afu.primary.profile"),
-           let saved = try? JSONDecoder().decode(StoredPrimaryProfile.self, from: data) {
+           let saved = try? JSONDecoder().decode(StoredPrimaryProfile.self, from: data),
+           Self.isValid(height: saved.height, birthDate: saved.birthDate) {
             sex = saved.sex
             height = saved.height
             birthDate = saved.birthDate
+            isComplete = true
         }
         if let data = defaults.data(forKey: "afu.family.members"),
            let saved = try? JSONDecoder().decode([FamilyMember].self, from: data) {
@@ -23,11 +28,27 @@ import SwiftUI
         }
     }
     var primaryMember: FamilyMember { FamilyMember(id: primaryID, name: String(appLocalized: "本人"), sex: sex, height: height, birthDate: birthDate, referenceWeight: 60) }
+    @discardableResult
+    func completeProfile(sex: Sex, height: Double, birthDate: Date) -> Bool {
+        guard Self.isValid(height: height, birthDate: birthDate) else { return false }
+        isComplete = false
+        self.sex = sex
+        self.height = height
+        self.birthDate = birthDate
+        isComplete = true
+        savePrimaryProfile()
+        return true
+    }
+
+    static func isValid(height: Double, birthDate: Date) -> Bool {
+        let earliest = Calendar.current.date(from: DateComponents(year: 1900, month: 1, day: 1))!
+        // Preserve the existing backup schema's wider height range.
+        return height.isFinite && (50...300).contains(height)
+            && birthDate >= earliest && birthDate <= Date()
+    }
     func addMember(_ member: FamilyMember) { members.append(member); saveMembers() }
     func restoreBackup(primary: FamilyMember, family: [FamilyMember]) {
-        sex = primary.sex
-        height = primary.height
-        birthDate = primary.birthDate
+        guard completeProfile(sex: primary.sex, height: primary.height, birthDate: primary.birthDate) else { return }
         members = family
         saveMembers()
     }
@@ -52,6 +73,7 @@ import SwiftUI
     }
     private func saveMembers() { if let data = try? JSONEncoder().encode(members) { defaults.set(data, forKey: "afu.family.members") } }
     private func savePrimaryProfile() {
+        guard isComplete else { return }
         let profile = StoredPrimaryProfile(sex: sex, height: height, birthDate: birthDate)
         if let data = try? JSONEncoder().encode(profile) {
             defaults.set(data, forKey: "afu.primary.profile")

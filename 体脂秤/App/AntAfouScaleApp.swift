@@ -18,10 +18,28 @@ import SwiftUI
     }
 }
 
+/// Created only on the normal route, so launch-time demos never start real BLE.
 private struct MainAppContent: View {
     let language: String
-    @StateObject private var scale = ScaleManager()
     @StateObject private var profile = UserProfile()
+
+    var body: some View {
+        Group {
+            if profile.isComplete {
+                MeasurementAppContent(language: language)
+            } else {
+                PrimaryProfileSetupView()
+                    .id(language)
+            }
+        }
+        .environmentObject(profile)
+    }
+}
+
+/// No Bluetooth or HealthKit objects are created until onboarding is complete.
+private struct MeasurementAppContent: View {
+    let language: String
+    @StateObject private var scale = ScaleManager()
     @StateObject private var healthKit = HealthKitManager()
     @StateObject private var comparisonStore = ComparisonStore()
 
@@ -29,7 +47,6 @@ private struct MainAppContent: View {
         ContentView()
             .id(language)
             .environmentObject(scale)
-            .environmentObject(profile)
             .environmentObject(healthKit)
             .environmentObject(comparisonStore)
     }

@@ -9,13 +9,32 @@ struct TrendsBackupChecks {
         let demoDefaults = UserDefaults(suiteName: suiteName)!
         defer { demoDefaults.removePersistentDomain(forName: suiteName) }
         let demoProfile = UserProfile(defaults: demoDefaults)
+        assert(!demoProfile.isComplete)
+        assert(demoDefaults.data(forKey: "afu.primary.profile") == nil)
         demoProfile.height = 182
-        assert(UserProfile(defaults: demoDefaults).height == 182)
+        assert(!UserProfile(defaults: demoDefaults).isComplete, "partial edits must not complete onboarding")
+        let birthday = Date(timeIntervalSince1970: 946684800)
+        assert(!demoProfile.completeProfile(sex: .male, height: .nan, birthDate: birthday))
+        assert(!demoProfile.completeProfile(sex: .male, height: 182, birthDate: Date().addingTimeInterval(86400)))
+        assert(demoDefaults.data(forKey: "afu.primary.profile") == nil)
+        assert(demoProfile.completeProfile(sex: .male, height: 182, birthDate: birthday))
+        let reloadedProfile = UserProfile(defaults: demoDefaults)
+        assert(reloadedProfile.isComplete && reloadedProfile.height == 182 && reloadedProfile.sex == .male)
+        assert(reloadedProfile.birthDate == birthday)
         assert(UserDefaults.standard.data(forKey: "afu.primary.profile") == realProfileBefore)
         assert(AppLanguage(rawValue: "en") == .english)
         assert(AppLanguage.simplifiedChinese.locale.identifier == "zh-Hans")
         let primary = FamilyMember(id: MeasurementBackup.primaryID, name: "本人", sex: .male,
                                    height: 170, birthDate: Date(timeIntervalSince1970: 946684800), referenceWeight: 60)
+        // The original profile schema had these same fields, but no completion flag.
+        demoDefaults.set(try JSONEncoder().encode(primary), forKey: "afu.primary.profile")
+        assert(UserProfile(defaults: demoDefaults).isComplete, "valid existing profiles skip onboarding")
+        let restored = UserProfile(defaults: UserDefaults(suiteName: suiteName + ".restore")!)
+        defer { UserDefaults(suiteName: suiteName + ".restore")!.removePersistentDomain(forName: suiteName + ".restore") }
+        assert(!restored.isComplete)
+        restored.restoreBackup(primary: primary, family: [])
+        assert(restored.isComplete && restored.height == primary.height)
+        print("PASS: blank onboarding, partial/invalid rejection, completion persistence, legacy profile and backup restoration")
         let start = Date(timeIntervalSince1970: 1_760_000_000.123456)
         func measurement(_ day: Int, _ weight: Double, id: UUID = UUID()) -> BodyMeasurement {
             BodyAlgorithm.measure(id: id, date: start.addingTimeInterval(Double(day) * 86400), weight: weight,

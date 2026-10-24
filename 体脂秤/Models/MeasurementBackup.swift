@@ -10,6 +10,8 @@ struct MeasurementBackup: Codable {
     let measurements: [BodyMeasurement]
     let references: [OfficialReferenceRecord]
     var repeatChecks: [RepeatabilityReport]? = nil
+    var weighedSubjects: [WeighedSubject]? = nil
+    var assistedRecords: [AssistedWeightRecord]? = nil
 
     func encoded() throws -> Data {
         let encoder = JSONEncoder()
@@ -27,6 +29,17 @@ struct MeasurementBackup: Codable {
 
     func validate() throws {
         guard format == "afu-scale-backup", schemaVersion == 1 else { throw BackupError.version }
+        let subjects = weighedSubjects ?? []
+        let assisted = assistedRecords ?? []
+        let subjectIDs = Set(subjects.map(\.id))
+        guard subjectIDs.count == subjects.count, Set(assisted.map(\.id)).count == assisted.count,
+              subjects.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && $0.name.count <= 40 }) else { throw BackupError.invalid }
+        for record in assisted {
+            let interval = record.date.timeIntervalSince(record.baselineDate)
+            guard subjectIDs.contains(record.subjectID), record.baselineWeight.isFinite, record.combinedWeight.isFinite,
+                  record.baselineWeight > 3, record.combinedWeight > record.baselineWeight,
+                  interval.isFinite, (0...600).contains(interval) else { throw BackupError.invalid }
+        }
         let checks = repeatChecks ?? []
         guard Set(checks.map(\.id)).count == checks.count else { throw BackupError.invalid }
         for check in checks {
@@ -92,6 +105,8 @@ struct MeasurementBackup: Codable {
                     members: merge(members, incoming.members), measurements: mergedMeasurements,
                     references: mergedReferences)
         result.repeatChecks = merge(repeatChecks ?? [], incoming.repeatChecks ?? [])
+        result.weighedSubjects = merge(weighedSubjects ?? [], incoming.weighedSubjects ?? [])
+        result.assistedRecords = merge(assistedRecords ?? [], incoming.assistedRecords ?? [])
         return result
     }
 
@@ -114,7 +129,9 @@ struct MeasurementBackup: Codable {
         return [row(String(localized: "本人资料"), [primary], [local.primary]),
                 row(String(localized: "家庭成员"), members, local.members),
                 row(String(localized: "测量记录"), measurements, local.measurements), referenceRow,
-                row(String(localized: "检查报告"), repeatChecks ?? [], local.repeatChecks ?? [])]
+                row(String(localized: "检查报告"), repeatChecks ?? [], local.repeatChecks ?? []),
+                row(String(localized: "称重对象"), weighedSubjects ?? [], local.weighedSubjects ?? []),
+                row(String(localized: "抱物记录"), assistedRecords ?? [], local.assistedRecords ?? [])]
     }
 
     func conflictDetails(against local: Self) -> [BackupConflict] {
@@ -153,6 +170,19 @@ struct MeasurementBackup: Codable {
                 conflicts.append(BackupConflict(id: report.id, title: String(localized: "检查报告"),
                     local: old.date.formatted() + " · " + old.measurements.map { String($0.weight) }.joined(separator: ", "),
                     incoming: report.date.formatted() + " · " + report.measurements.map { String($0.weight) }.joined(separator: ", ")))
+            }
+        }
+        for subject in weighedSubjects ?? [] {
+            if let old = (local.weighedSubjects ?? []).first(where: { $0.id == subject.id }), old != subject {
+                conflicts.append(BackupConflict(id: subject.id, title: String(localized: "称重对象"),
+                    local: old.name + " · " + old.kind.title, incoming: subject.name + " · " + subject.kind.title))
+            }
+        }
+        for record in assistedRecords ?? [] {
+            if let old = (local.assistedRecords ?? []).first(where: { $0.id == record.id }), old != record {
+                conflicts.append(BackupConflict(id: record.id, title: String(localized: "抱物记录"),
+                    local: old.date.formatted() + " · \(old.baselineWeight) / \(old.combinedWeight) kg",
+                    incoming: record.date.formatted() + " · \(record.baselineWeight) / \(record.combinedWeight) kg"))
             }
         }
         return conflicts

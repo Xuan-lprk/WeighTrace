@@ -83,6 +83,18 @@ struct TrendsView: View {
                         EmptyStateView(title: "这个范围内还没有记录", icon: "chart.xyaxis.line", message: "换个时间范围，或先完成一次测量。")
                     } else {
                         summary
+                        NavigationLink { MeasurementPlaybackView(records: records, metric: metric) } label: {
+                            HStack {
+                                Image(systemName: "play.circle.fill").font(.title)
+                                VStack(alignment: .leading) {
+                                    Text("播放这段时光").font(.headline)
+                                    Text("让曲线带你重看每一次记录").font(.caption)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                            }.foregroundStyle(.teal).padding()
+                                .background(.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 20))
+                        }
                         chart
                         if metric == .weight {
                             Toggle("显示每日中位数", isOn: $useDailyMedian)

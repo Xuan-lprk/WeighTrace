@@ -40,8 +40,40 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     private var hasSavedMeasurement = false
     @Published private(set) var repeatCapture: RepeatabilityCapture?
     @Published private(set) var repeatReports: [RepeatabilityReport] = []
+    @Published private(set) var weighedSubjects: [WeighedSubject] = []
+    @Published private(set) var assistedRecords: [AssistedWeightRecord] = []
+    @Published private(set) var assistedCapture: AssistedWeighingCapture?
+
+    func addWeighedSubject(name: String, kind: WeighedSubjectKind) {
+        let name = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40))
+        guard !name.isEmpty else { return }
+        weighedSubjects.append(WeighedSubject(id: UUID(), name: name, kind: kind))
+        saveAssistedData()
+    }
+    func startAssistedWeighing(subject: WeighedSubject) {
+        guard repeatCapture == nil, assistedCapture == nil, activePeripheral?.state == .connected else { return }
+        assistedCapture = AssistedWeighingCapture(subject: subject)
+        reviewMeasurement = nil; currentMeasurement = nil
+    }
+    func endAssistedWeighing() {
+        assistedCapture = nil
+        hasSavedMeasurement = true; isStable = false
+        impedance = 0; rawADCs = []; normalizedImpedances = []; selectedADCIndex = nil
+    }
+    func deleteAssistedRecord(id: UUID) {
+        if assistedCapture?.result?.id == id { endAssistedWeighing() }
+        assistedRecords.removeAll { $0.id == id }; saveAssistedData()
+    }
+    func restoreAssistedData(subjects: [WeighedSubject], records: [AssistedWeightRecord]) {
+        weighedSubjects = subjects; assistedRecords = records.sorted { $0.date > $1.date }; saveAssistedData()
+    }
+    private func saveAssistedData() {
+        if let data = try? JSONEncoder().encode(weighedSubjects) { UserDefaults.standard.set(data, forKey: "afu.assisted.subjects") }
+        if let data = try? JSONEncoder().encode(assistedRecords) { UserDefaults.standard.set(data, forKey: "afu.assisted.records") }
+    }
 
     func startRepeatCheck(member: FamilyMember) {
+        guard assistedCapture == nil, repeatCapture == nil else { return }
         repeatCapture = RepeatabilityCapture(member: member)
         reviewMeasurement = nil
         currentMeasurement = nil
@@ -101,6 +133,10 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         super.init(); central = CBCentralManager(delegate: self, queue: .main); loadHistory()
         if let data = UserDefaults.standard.data(forKey: "afu.repeatability.reports"),
            let reports = try? JSONDecoder().decode([RepeatabilityReport].self, from: data) { repeatReports = reports }
+        if let data = UserDefaults.standard.data(forKey: "afu.assisted.subjects"),
+           let subjects = try? JSONDecoder().decode([WeighedSubject].self, from: data) { weighedSubjects = subjects }
+        if let data = UserDefaults.standard.data(forKey: "afu.assisted.records"),
+           let records = try? JSONDecoder().decode([AssistedWeightRecord].self, from: data) { assistedRecords = records }
         log("ScaleManager initialized")
     }
     func startScan() {
@@ -150,7 +186,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         discoveredDevices = []
     }
     private func finishMeasurement() {
-        guard repeatCapture == nil else { return }
+        guard repeatCapture == nil, assistedCapture == nil else { return }
         guard liveWeight > 0, let profile else { return }
         guard !hasSavedMeasurement else { return }
         hasSavedMeasurement = true
@@ -327,6 +363,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         isMeasuring = false
         hasSavedMeasurement = false
         repeatCapture?.disconnect()
+        assistedCapture?.disconnect()
         if UserDefaults.standard.bool(forKey: "afu.hasPairedScale") {
             log("[BLE] Restarting scan after disconnection...")
             startScan()
@@ -441,6 +478,12 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         log("[BLE] Successfully parsed packet of type: \(packet.type)")
         switch packet.type {
         case .weight:
+            if var capture = assistedCapture {
+                if let record = capture.receiveWeight(packet.weight, stable: packet.stable) {
+                    assistedRecords.insert(record, at: 0); saveAssistedData()
+                }
+                assistedCapture = capture
+            }
             repeatCapture?.receiveWeight(packet.weight, stable: packet.stable)
             collectRepeatCheck()
             let wasMeasuring = isMeasuring
@@ -488,7 +531,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
             log("[BLE] Impedance packet - raw ADCs: \(packet.adcs), normalized: \(normalized), selected: \(selectedLabel) = \(impedance)")
             if isStable { finishMeasurement() }
         case .history:
-            guard repeatCapture == nil else { return }
+            guard repeatCapture == nil, assistedCapture == nil else { return }
             if let item = packet.historyMeasurement(profile: profile, history: history) {
                 history.insert(item, at: 0)
                 saveHistory()

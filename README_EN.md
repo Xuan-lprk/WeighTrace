@@ -18,6 +18,7 @@ This fork is based on [maoziban/smart-body-scale-IOS](https://github.com/maoziba
 - Trends filter by member, 30/90 days or all time, and weight/body fat/BMI, with raw readings, daily weight medians, and a 7-day trend.
 - Full JSON backup and merge restoration with conflict previews, plus CSV analysis export. See [Trends and Backup](docs/TRENDS_BACKUP.md) (Chinese).
 - Three-reading repeatability checks, per-member ADC difference charts, customizable home metrics, measurement tags and notes. See [Measurement Tools](docs/MEASUREMENT_TOOLS.md) (Chinese).
+- Animated history playback and separate assisted-weighing records for pets, luggage, or parcels. See [Playback and Assisted Weighing](docs/PLAYBACK_ASSISTED.md) (Chinese).
 - Supports foreground Bluetooth measurements on iPhone, iPad, and Mac through Mac Catalyst.
 - On iPhone and iPad, optionally writes the following data to Apple Health:
   - Weight

@@ -10,6 +10,10 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView { VStack(spacing: 12) {
                 weightCard
+                if scale.assistedCapture != nil {
+                    NavigationLink("抱物称重进行中，点击继续") { AssistedWeighingView() }
+                        .padding().background(.teal.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+                }
                 if scale.repeatCapture != nil {
                     NavigationLink("三次检查进行中，点击查看进度") { RepeatabilityView() }
                         .padding().background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
@@ -31,6 +35,11 @@ struct DashboardView: View {
                     measuringHint
                 }
                 NavigationLink("三次测量检查") { RepeatabilityView() }
+                NavigationLink { AssistedWeighingView() } label: {
+                    Label("抱猫、行李或包裹称重", systemImage: "pawprint.fill")
+                        .frame(maxWidth: .infinity).padding()
+                        .background(.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 18))
+                }
             }
             .padding()
             }

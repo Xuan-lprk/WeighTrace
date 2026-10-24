@@ -24,7 +24,7 @@ struct RepeatabilityView: View {
                         ForEach([profile.primaryMember] + profile.members) { Text($0.name).tag($0.id) }
                     }
                     Button("开始三次测量检查") { scale.startRepeatCheck(member: member) }
-                        .disabled(scale.connectionState != .connected || scale.reviewMeasurement != nil)
+                        .disabled(scale.connectionState != .connected || scale.reviewMeasurement != nil || scale.assistedCapture != nil)
                     Text("先连接体脂秤。每次必须观察到离秤事件；断线后也需要先离秤再继续。退出后请离秤，再开始日常称重。")
                         .font(.caption).foregroundStyle(.secondary)
                 }

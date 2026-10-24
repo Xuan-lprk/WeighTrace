@@ -31,6 +31,8 @@ struct BackupView: View {
         var result = MeasurementBackup(primary: profile.primaryMember, members: profile.members,
                           measurements: scale.history, references: comparisons.references)
         result.repeatChecks = scale.repeatReports
+        result.weighedSubjects = scale.weighedSubjects
+        result.assistedRecords = scale.assistedRecords
         return result
     }
 
@@ -41,6 +43,7 @@ struct BackupView: View {
                 LabeledContent("家庭成员", value: "\(profile.members.count)")
                 LabeledContent("阿福参考", value: "\(comparisons.references.count)")
                 LabeledContent("检查报告", value: "\(scale.repeatReports.count)")
+                LabeledContent("抱物记录", value: "\(scale.assistedRecords.count)")
                 Button("导出完整备份（JSON）") { export(csv: false) }
                 Button("导出分析表（CSV）") { export(csv: true) }
             } header: { Text("导出数据") } footer: {
@@ -125,6 +128,7 @@ struct BackupView: View {
             _ = try merged.encoded()
             scale.restoreBackup(merged.measurements)
             scale.restoreRepeatReports(merged.repeatChecks ?? [])
+            scale.restoreAssistedData(subjects: merged.weighedSubjects ?? [], records: merged.assistedRecords ?? [])
             comparisons.restoreBackup(merged.references)
             profile.restoreBackup(primary: merged.primary, family: merged.members)
             incoming = nil

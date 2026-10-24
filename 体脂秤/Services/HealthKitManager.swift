@@ -113,13 +113,16 @@ final class HealthKitManager: ObservableObject {
 
     var onMeasurementsRecovered: (([BodyMeasurement]) -> Int)?
 
-    private let healthStore = HKHealthStore()
+    private lazy var healthStore = HKHealthStore()
+    private let isDemo: Bool
     private var pendingSaveTasks: [UUID: Task<Void, Never>] = [:]
     private let sourceSampleLimit = 200
     private static let duplicateTimeWindow: TimeInterval = 5 * 60
     private static let duplicateWeightToleranceKilograms = 0.1
 
-    init() {
+    init(isDemo: Bool = false) {
+        self.isDemo = isDemo
+        guard !isDemo else { return }
         UserDefaults.standard.register(defaults: [
             Self.enabledKey: false,
             Self.weightKey: true,
@@ -131,7 +134,7 @@ final class HealthKitManager: ObservableObject {
     }
 
     var isAvailable: Bool {
-        HKHealthStore.isHealthDataAvailable()
+        !isDemo && HKHealthStore.isHealthDataAvailable()
     }
 
     func requestAuthorization() {
@@ -305,6 +308,7 @@ final class HealthKitManager: ObservableObject {
     }
 
     func delete(_ measurement: BodyMeasurement) async throws -> Int {
+        guard !isDemo else { return 0 }
         guard isAvailable else { return 0 }
         if let pendingSaveTask = pendingSaveTasks[measurement.id] {
             await pendingSaveTask.value
@@ -333,6 +337,7 @@ final class HealthKitManager: ObservableObject {
     }
 
     func refreshStatus() {
+        guard !isDemo else { return }
         guard isAvailable else {
             statusText = String(appLocalized: "此设备不支持 Apple 健康")
             return

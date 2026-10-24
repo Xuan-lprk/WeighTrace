@@ -13,6 +13,7 @@ struct ProfileView: View {
     @AppStorage(ImpedanceADCChoice.storageKey) private var selectedADCIndex = ImpedanceADCChoice.first.rawValue
     @AppStorage(AppLanguage.storageKey, store: .standard) private var language = AppLanguage.system.rawValue
     @State private var showingAddMember = false
+    @State private var showingDemo = false
     var body: some View {
         NavigationStack { Form {
             Section {
@@ -36,7 +37,7 @@ struct ProfileView: View {
                 Text("秤每次会发送两个 ADC，其物理含义尚未确认。所选 ADC 会影响阻抗、体脂及由体脂推算的身体指标，但不影响体重、BMI 和骨量。若希望结果更接近蚂蚁阿福，可选择对照差值较小的；更接近官方结果不代表医学上更准确。选择仅影响之后的新测量，不会改写历史记录。")
             }
 #if targetEnvironment(macCatalyst)
-            MacUpdateSection()
+            if !scale.isDemo { MacUpdateSection() }
             Section {
                 Label("测量历史保存在这台 Mac", systemImage: "internaldrive")
                 LabeledContent("已保存记录", value: "\(scale.history.count)")
@@ -156,18 +157,33 @@ struct ProfileView: View {
                     }
                 }
             }
-    Section("显示与演示") {
-        Picker("语言", selection: $language) {
-            ForEach(AppLanguage.allCases) { option in
-                Text(option.title).tag(option.rawValue)
+            Section {
+                Picker("语言", selection: $language) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.title).tag(language.rawValue)
+                    }
+                }
+                Button {
+                    scale.suspendForDemo()
+                    showingDemo = true
+                } label: {
+                    Label("截图演示模式", systemImage: "photo.on.rectangle.angled")
+                }
+            } header: {
+                Text("显示与演示")
+            } footer: {
+                Text("演示使用独立的虚构资料和记录，不连接体脂秤、不访问 Apple 健康，也不会改动真实记录。")
             }
         }
-    }
-}.navigationTitle("我的资料")
+            .disabled(scale.isDemo)
+            .navigationTitle("我的资料")
+            .fullScreenCover(isPresented: $showingDemo, onDismiss: { scale.resumeAfterDemo() }) {
+                ScreenshotDemoView()
+            }
             .sheet(isPresented: $showingAddMember) { AddFamilyMemberView { profile.addMember($0) } }
             .onAppear {
 #if !targetEnvironment(macCatalyst)
-                healthKit.refreshStatus()
+                if !scale.isDemo { healthKit.refreshStatus() }
 #endif
             }
         }

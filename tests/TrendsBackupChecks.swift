@@ -3,6 +3,17 @@ import Foundation
 @main
 struct TrendsBackupChecks {
     @MainActor static func main() throws {
+        let realProfileBefore = UserDefaults.standard.data(forKey: "afu.primary.profile")
+        let realReferencesBefore = UserDefaults.standard.data(forKey: "afu.official.references")
+        let suiteName = "afu.tests.demo.\(UUID().uuidString)"
+        let demoDefaults = UserDefaults(suiteName: suiteName)!
+        defer { demoDefaults.removePersistentDomain(forName: suiteName) }
+        let demoProfile = UserProfile(defaults: demoDefaults)
+        demoProfile.height = 182
+        assert(UserProfile(defaults: demoDefaults).height == 182)
+        assert(UserDefaults.standard.data(forKey: "afu.primary.profile") == realProfileBefore)
+        assert(AppLanguage(rawValue: "en") == .english)
+        assert(AppLanguage.simplifiedChinese.locale.identifier == "zh-Hans")
         let primary = FamilyMember(id: MeasurementBackup.primaryID, name: "本人", sex: .male,
                                    height: 170, birthDate: Date(timeIntervalSince1970: 946684800), referenceWeight: 60)
         let start = Date(timeIntervalSince1970: 1_760_000_000.123456)
@@ -18,6 +29,11 @@ struct TrendsBackupChecks {
             referenceType: .officialApp, importMethod: .manual, weight: 60, bodyFat: 15,
             waterPercent: nil, musclePercent: nil, proteinPercent: nil, boneMass: nil,
             skeletalMusclePercent: nil, subcutaneousFatPercent: nil, visceralFat: nil, note: "comma, quote\"\nline")
+        let demoComparisons = ComparisonStore(defaults: demoDefaults)
+        demoComparisons.upsert(reference)
+        assert(ComparisonStore(defaults: demoDefaults).references == [reference])
+        assert(UserDefaults.standard.data(forKey: "afu.official.references") == realReferencesBefore)
+        print("PASS: injected demo profile/reference stores do not modify real defaults; language choices")
         let backup = MeasurementBackup(primary: primary, members: [], measurements: [a, b, c], references: [reference])
         let decoded = try MeasurementBackup.decode(backup.encoded())
         assert(decoded.measurements == backup.measurements, "dates, snapshots and ADCs round-trip exactly")

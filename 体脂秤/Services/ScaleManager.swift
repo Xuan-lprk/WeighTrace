@@ -7,13 +7,43 @@ struct DiscoveredScale: Identifiable { let peripheral: CBPeripheral; let name: S
 
 enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting, connected, measuring
     var title: String { switch self { case .bluetoothOff: String(appLocalized: "蓝牙未开启"); case .idle: String(appLocalized: "等待连接"); case .scanning: String(appLocalized: "正在搜索体脂秤"); case .connecting: String(appLocalized: "正在连接"); case .connected: String(appLocalized: "已连接，等待上秤"); case .measuring: String(appLocalized: "正在测量") } }
-    var shortTitle: String { self == .connected || self == .measuring ? String(appLocalized: "已连接") : String(appLocalized: "未连接") }
-    var detail: String { self == .bluetoothOff ? String(appLocalized: "请在系统设置中开启蓝牙") : "AFU Welland BLE" }
     var icon: String { self == .bluetoothOff ? "bluetooth.slash" : "dot.radiowaves.left.and.right" }
     var color: Color { self == .bluetoothOff ? .red : (self == .connected || self == .measuring ? .green : .orange) }
 }
 
 @MainActor final class ScaleManager: NSObject, ObservableObject {
+    private let defaults: UserDefaults
+    let isDemo: Bool
+    private var isSuspendedForDemo = false
+    private var resumeScanAfterDemo = false
+
+    func suspendForDemo() {
+        resumeScanAfterDemo = isScanning || activePeripheral != nil
+        isSuspendedForDemo = true
+        central?.stopScan()
+        isScanning = false
+        if let activePeripheral { central?.cancelPeripheralConnection(activePeripheral) }
+    }
+
+    func resumeAfterDemo() {
+        isSuspendedForDemo = false
+        if resumeScanAfterDemo { startScan() }
+        resumeScanAfterDemo = false
+    }
+
+    func loadDemoMeasurements(_ records: [BodyMeasurement]) {
+        guard isDemo else { return }
+        history = records.sorted { $0.date > $1.date }
+        currentMeasurement = history.first
+        liveWeight = currentMeasurement?.weight ?? 0
+        rawADCs = currentMeasurement?.rawADCs ?? []
+        normalizedImpedances = currentMeasurement?.normalizedImpedances ?? []
+        impedance = currentMeasurement?.impedance ?? 0
+        selectedADCIndex = 0
+        isStable = true
+        deviceName = "AFU-WL-TZ-A1 · DEMO"
+        connectionState = .connected
+    }
     private static let pairedPeripheralIDKey = "afu.pairedPeripheralID"
     private let serviceUUID = CBUUID(string: "0000FFB0-0000-1000-8000-00805F9B34FB")
     private var central: CBCentralManager!
@@ -68,8 +98,8 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         weighedSubjects = subjects; assistedRecords = records.sorted { $0.date > $1.date }; saveAssistedData()
     }
     private func saveAssistedData() {
-        if let data = try? JSONEncoder().encode(weighedSubjects) { UserDefaults.standard.set(data, forKey: "afu.assisted.subjects") }
-        if let data = try? JSONEncoder().encode(assistedRecords) { UserDefaults.standard.set(data, forKey: "afu.assisted.records") }
+        if let data = try? JSONEncoder().encode(weighedSubjects) { defaults.set(data, forKey: "afu.assisted.subjects") }
+        if let data = try? JSONEncoder().encode(assistedRecords) { defaults.set(data, forKey: "afu.assisted.records") }
     }
 
     func startRepeatCheck(member: FamilyMember) {
@@ -93,7 +123,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     }
     private func saveRepeatReports() {
         if let data = try? JSONEncoder().encode(repeatReports) {
-            UserDefaults.standard.set(data, forKey: "afu.repeatability.reports")
+            defaults.set(data, forKey: "afu.repeatability.reports")
         }
     }
     private func collectRepeatCheck() {
@@ -129,17 +159,22 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         debugLogs = []
     }
 
-    override init() {
-        super.init(); central = CBCentralManager(delegate: self, queue: .main); loadHistory()
-        if let data = UserDefaults.standard.data(forKey: "afu.repeatability.reports"),
+    init(defaults: UserDefaults = .standard, isDemo: Bool = false) {
+        self.defaults = defaults
+        self.isDemo = isDemo
+        super.init()
+        if !isDemo { central = CBCentralManager(delegate: self, queue: .main) }
+        loadHistory()
+        if let data = defaults.data(forKey: "afu.repeatability.reports"),
            let reports = try? JSONDecoder().decode([RepeatabilityReport].self, from: data) { repeatReports = reports }
-        if let data = UserDefaults.standard.data(forKey: "afu.assisted.subjects"),
+        if let data = defaults.data(forKey: "afu.assisted.subjects"),
            let subjects = try? JSONDecoder().decode([WeighedSubject].self, from: data) { weighedSubjects = subjects }
-        if let data = UserDefaults.standard.data(forKey: "afu.assisted.records"),
+        if let data = defaults.data(forKey: "afu.assisted.records"),
            let records = try? JSONDecoder().decode([AssistedWeightRecord].self, from: data) { assistedRecords = records }
         log("ScaleManager initialized")
     }
     func startScan() {
+        guard !isDemo, !isSuspendedForDemo else { return }
         if activePeripheral?.state == .connected {
             isScanning = false
             connectionState = isMeasuring ? .measuring : .connected
@@ -166,6 +201,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         )
     }
     func connect(_ device: DiscoveredScale) {
+        guard !isDemo, !isSuspendedForDemo else { return }
         guard connectionState != .connecting, activePeripheral == nil else { return }
         central.stopScan()
         isScanning = false
@@ -175,8 +211,9 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         central.connect(device.peripheral)
     }
     func forgetPairedScale() {
-        UserDefaults.standard.set(false, forKey: "afu.hasPairedScale")
-        UserDefaults.standard.removeObject(forKey: Self.pairedPeripheralIDKey)
+        guard !isDemo else { return }
+        defaults.set(false, forKey: "afu.hasPairedScale")
+        defaults.removeObject(forKey: Self.pairedPeripheralIDKey)
         if let activePeripheral {
             central.cancelPeripheralConnection(activePeripheral)
         } else {
@@ -271,8 +308,8 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         updated.tags = measurement.tags; updated.note = measurement.note
         currentMeasurement = updated; history[index] = updated; saveHistory()
     }
-    private func saveHistory() { if let data = try? JSONEncoder().encode(history) { UserDefaults.standard.set(data, forKey: "afu.scale.history") } }
-    private func loadHistory() { if let data = UserDefaults.standard.data(forKey: "afu.scale.history"), let saved = try? JSONDecoder().decode([BodyMeasurement].self, from: data) { history = saved } }
+    private func saveHistory() { if let data = try? JSONEncoder().encode(history) { defaults.set(data, forKey: "afu.scale.history") } }
+    private func loadHistory() { if let data = defaults.data(forKey: "afu.scale.history"), let saved = try? JSONDecoder().decode([BodyMeasurement].self, from: data) { history = saved } }
 }
 
 extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrency CBPeripheralDelegate {
@@ -314,8 +351,8 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         
         // QR Scanner auto-connection removed
         
-        let pairedID = UserDefaults.standard.string(forKey: Self.pairedPeripheralIDKey)
-        let isLegacyPairing = UserDefaults.standard.bool(forKey: "afu.hasPairedScale") && pairedID == nil
+        let pairedID = defaults.string(forKey: Self.pairedPeripheralIDKey)
+        let isLegacyPairing = defaults.bool(forKey: "afu.hasPairedScale") && pairedID == nil
         let isKnownPeripheral = pairedID == peripheral.identifier.uuidString
         if isLegacyPairing || isKnownPeripheral {
             log("[BLE] Auto-connecting to paired scale: \(name)")
@@ -330,10 +367,14 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        guard !isSuspendedForDemo else {
+            central.cancelPeripheralConnection(peripheral)
+            return
+        }
         log("[BLE] Connected to: \(peripheral.name ?? "nil") (\(peripheral.identifier.uuidString))")
         deviceName = peripheral.name ?? deviceName
-        UserDefaults.standard.set(true, forKey: "afu.hasPairedScale")
-        UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: Self.pairedPeripheralIDKey)
+        defaults.set(true, forKey: "afu.hasPairedScale")
+        defaults.set(peripheral.identifier.uuidString, forKey: Self.pairedPeripheralIDKey)
         connectionState = .connected
         peripheral.delegate = self
         // targetMacAddress reset removed
@@ -345,7 +386,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         log("[BLE] Failed to connect to \(peripheral.name ?? "nil"), error: \(String(describing: error))")
         activePeripheral = nil
         connectionState = .idle
-        if UserDefaults.standard.bool(forKey: "afu.hasPairedScale") {
+        if defaults.bool(forKey: "afu.hasPairedScale") {
             startScan()
         }
     }
@@ -364,7 +405,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         hasSavedMeasurement = false
         repeatCapture?.disconnect()
         assistedCapture?.disconnect()
-        if UserDefaults.standard.bool(forKey: "afu.hasPairedScale") {
+        if defaults.bool(forKey: "afu.hasPairedScale") {
             log("[BLE] Restarting scan after disconnection...")
             startScan()
         }
@@ -404,6 +445,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard !isSuspendedForDemo else { return }
         if let error = error {
             log("[BLE] Error updating value for characteristic \(characteristic.uuid): \(error.localizedDescription)")
             return
@@ -515,7 +557,7 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
             collectRepeatCheck()
             rawADCs = packet.adcs
             normalizedImpedances = normalized
-            let preferredIndex = UserDefaults.standard.integer(forKey: ImpedanceADCChoice.storageKey)
+            let preferredIndex = defaults.integer(forKey: ImpedanceADCChoice.storageKey)
             let preferredValue = normalized.indices.contains(preferredIndex) ? normalized[preferredIndex] : nil
             if let preferredValue, (100.0...1500.0).contains(preferredValue) {
                 impedance = preferredValue

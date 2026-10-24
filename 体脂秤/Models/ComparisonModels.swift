@@ -102,11 +102,13 @@ struct ComparisonSummary {
 
 @MainActor
 final class ComparisonStore: ObservableObject {
+    private let defaults: UserDefaults
     private static let storageKey = "afu.official.references"
 
     @Published private(set) var references: [OfficialReferenceRecord] = []
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         load()
     }
 
@@ -241,11 +243,11 @@ final class ComparisonStore: ObservableObject {
 
     private func save() {
         guard let data = try? JSONEncoder().encode(references) else { return }
-        UserDefaults.standard.set(data, forKey: Self.storageKey)
+        defaults.set(data, forKey: Self.storageKey)
     }
 
     private func load() {
-        guard let data = UserDefaults.standard.data(forKey: Self.storageKey),
+        guard let data = defaults.data(forKey: Self.storageKey),
               let saved = try? JSONDecoder().decode([OfficialReferenceRecord].self, from: data) else {
             return
         }

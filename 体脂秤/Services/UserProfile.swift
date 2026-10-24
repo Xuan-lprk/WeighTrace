@@ -3,20 +3,21 @@ import Combine
 import SwiftUI
 
 @MainActor final class UserProfile: ObservableObject {
+    private let defaults: UserDefaults
     @Published var sex: Sex = .female { didSet { savePrimaryProfile() } }
     @Published var height: Double = 165 { didSet { savePrimaryProfile() } }
     @Published var birthDate = Calendar.current.date(byAdding: .year, value: -28, to: .now) ?? .now { didSet { savePrimaryProfile() } }
     @Published var members: [FamilyMember] = []
-    var age: Int { Calendar.current.dateComponents([.year], from: birthDate, to: .now).year ?? 28 }
     private let primaryID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-    init() {
-        if let data = UserDefaults.standard.data(forKey: "afu.primary.profile"),
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        if let data = defaults.data(forKey: "afu.primary.profile"),
            let saved = try? JSONDecoder().decode(StoredPrimaryProfile.self, from: data) {
             sex = saved.sex
             height = saved.height
             birthDate = saved.birthDate
         }
-        if let data = UserDefaults.standard.data(forKey: "afu.family.members"),
+        if let data = defaults.data(forKey: "afu.family.members"),
            let saved = try? JSONDecoder().decode([FamilyMember].self, from: data) {
             members = saved
         }
@@ -49,11 +50,11 @@ import SwiftUI
         }.min() ?? 0
         return smallestDifference > 7
     }
-    private func saveMembers() { if let data = try? JSONEncoder().encode(members) { UserDefaults.standard.set(data, forKey: "afu.family.members") } }
+    private func saveMembers() { if let data = try? JSONEncoder().encode(members) { defaults.set(data, forKey: "afu.family.members") } }
     private func savePrimaryProfile() {
         let profile = StoredPrimaryProfile(sex: sex, height: height, birthDate: birthDate)
         if let data = try? JSONEncoder().encode(profile) {
-            UserDefaults.standard.set(data, forKey: "afu.primary.profile")
+            defaults.set(data, forKey: "afu.primary.profile")
         }
     }
 

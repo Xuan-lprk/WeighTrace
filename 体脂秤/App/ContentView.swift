@@ -16,7 +16,7 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $tab) {
             Group {
-                if hasPairedScale { DashboardView() } else { PairingView() }
+                if hasPairedScale || scale.isDemo { DashboardView() } else { PairingView() }
             }.tabItem { Label("测量", systemImage: "waveform.path.ecg") }.tag(0)
             TrendsView().tabItem { Label("趋势", systemImage: "chart.xyaxis.line") }.tag(3)
             HistoryView().tabItem { Label("历史", systemImage: "chart.line.uptrend.xyaxis") }.tag(1)
@@ -27,9 +27,11 @@ struct ContentView: View {
             scale.profile = profile
             scale.comparisonStore = comparisonStore
 #if !targetEnvironment(macCatalyst)
-            scale.healthKit = healthKit
-            healthKit.onMeasurementsRecovered = { measurements in
-                scale.mergeRestoredHistory(measurements)
+            if !scale.isDemo {
+                scale.healthKit = healthKit
+                healthKit.onMeasurementsRecovered = { measurements in
+                    scale.mergeRestoredHistory(measurements)
+                }
             }
 #else
             // macOS 没有 Apple 健康数据库；Catalyst 版只保留蓝牙测量与本地历史。
@@ -69,7 +71,7 @@ struct ContentView: View {
     }
 
     private func promptForInitialMemberIfNeeded() {
-        if hasPairedScale && !hasPromptedInitial { showingInitialPrompt = true }
+        if !scale.isDemo && hasPairedScale && !hasPromptedInitial { showingInitialPrompt = true }
     }
 }
 

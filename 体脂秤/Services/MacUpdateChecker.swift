@@ -34,7 +34,7 @@ final class MacUpdateChecker: ObservableObject {
         status = String(appLocalized: "正在检查更新…")
         defer { isChecking = false }
         do {
-            let url = URL(string: "https://api.github.com/repos/Xuan-lprk/smart-body-scale-IOS/releases?per_page=30")!
+            let url = URL(string: "https://api.github.com/repos/Xuan-lprk/smart-body-scale/releases?per_page=30")!
             var request = URLRequest(url: url, timeoutInterval: 20)
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
             let configuration = URLSessionConfiguration.ephemeral
@@ -61,7 +61,7 @@ final class MacUpdateChecker: ObservableObject {
                 return
             }
             guard release.html_url.scheme == "https", release.html_url.host == "github.com",
-                  release.html_url.path.hasPrefix("/Xuan-lprk/smart-body-scale-IOS/releases/") else {
+                  release.html_url.path.hasPrefix("/Xuan-lprk/smart-body-scale/releases/") else {
                 throw URLError(.badURL)
             }
             downloadURL = release.html_url

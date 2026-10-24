@@ -4,7 +4,7 @@
 
 在工程目录执行 `bash scripts/package-mac.sh`。脚本用 Release 配置构建 Apple 芯片与 Intel 通用 App、临时签名并验证，生成带 Applications 快捷方式的 DMG 和 SHA-256 文件到 `dist/`。不会上传、创建 GitHub Release 或携带本机用户数据。
 
-同时保留可直接打开的 `WeighTrace-<版本>-<构建号>-test.app`。DMG 附带 LICENSE 和 SOURCE.txt，记录源码提交与构建时工作区是否干净；对外分发时应使用已提交、已推送的干净源码。版本 1.6 的新本地测试包使用 Build 8，不覆盖旧的 Build 7 包。
+同时保留可直接打开的 `WeighTrace-<版本>-<构建号>-test.app`。DMG 附带 LICENSE 和 SOURCE.txt，记录源码提交与构建时工作区是否干净；对外分发时应使用已提交、已推送的干净源码。版本 1.6 的当前本地测试包使用 Build 9，不覆盖旧包。
 
 这是 ad-hoc 测试签名，不是 Developer ID。无法进行 Apple 公证，也不保证所有接收者的系统都允许打开。接收者无需开发者账号；有管理策略的 Mac 可能禁止未经公证的软件。
 

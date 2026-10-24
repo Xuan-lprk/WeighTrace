@@ -10,7 +10,7 @@
 
 称重后可以查看趋势、备份记录，并把两路 ADC 的本地估算与阿福参考结果对照。
 
-[下载 Mac 测试版](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases)  · [更新日志](docs/CHANGELOG.md) · [反馈问题](https://github.com/Xuan-lprk/smart-body-scale-IOS/issues)
+[下载 Mac 测试版](https://github.com/Xuan-lprk/smart-body-scale/releases)  · [更新日志](docs/CHANGELOG.md) · [反馈问题](https://github.com/Xuan-lprk/smart-body-scale/issues)
 
 > **先确认型号：目前已验证的是 `AFU-WL-TZ-A1`（即一分钱购买的那款）。** 不是所有阿福、沃莱或其他品牌的体脂秤都能连接。体重来自秤的测量，体脂等身体成分是本地估算，不保证与厂商 App 一致，也不用于医疗判断。
 
@@ -18,7 +18,7 @@
 
 | 你的设备 | 怎么安装 | Apple 健康 |
 |---|---|---|
-| Mac：macOS 15.6+，Apple 芯片或 Intel | 在 [Releases 发布页](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases) 展开 **Assets**，下载 `AFU-Scale-Mac-…-test.dmg` | 不支持；记录保存在 Mac 本地 |
+| Mac：macOS 15.6+，Apple 芯片或 Intel | 在 [Releases 发布页](https://github.com/Xuan-lprk/smart-body-scale/releases) 展开 **Assets**，下载 `AFU-Scale-Mac-…-test.dmg` | 不支持；记录保存在 Mac 本地 |
 | iPhone / iPad：iOS / iPadOS 18.6+ | 当前需使用 Mac 和 Xcode 自行构建；见下方[开发者运行说明](#开发者构建与运行) | 可选读取与写入 |
 | Android | 暂无 App，有需求我再移植 | 不适用 |
 

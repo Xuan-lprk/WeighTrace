@@ -4,7 +4,7 @@
 
 ## 先下载安装包
 
-打开本项目的 [GitHub Releases 发布页](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases)，选择需要的版本，在 **Assets** 中下载 `AFU-Scale-Mac-…-test.dmg`。`Source code (zip)` 和 `Source code (tar.gz)` 是源码，不是安装包。如果没有 DMG，该版本暂不能按本文直接安装。
+打开本项目的 [GitHub Releases 发布页](https://github.com/Xuan-lprk/smart-body-scale/releases)，选择需要的版本，在 **Assets** 中下载 `AFU-Scale-Mac-…-test.dmg`。`Source code (zip)` 和 `Source code (tar.gz)` 是源码，不是安装包。如果没有 DMG，该版本暂不能按本文直接安装。
 
 请同时阅读该版本的发布说明：仓库首页可能包含尚未打包的新功能。当前仅验证 `AFU-WL-TZ-A1 / category=2 / subtype=7`，不保证其他型号兼容。
 
@@ -31,4 +31,4 @@
 
 搜不到秤时，检查蓝牙权限、秤是否亮屏，并确认手机阿福、其他电脑或 CLI 已断开。Mac 版需要 App 在前台连接，不支持 Apple 健康。
 
-仍有问题可到 [Issues](https://github.com/Xuan-lprk/smart-body-scale-IOS/issues)反馈：提供 App 版本、macOS 版本、芯片类型、秤型号、复现步骤及准确报错。公开前请遮住姓名、生日、健康数值和蓝牙设备标识，不要直接上传完整 JSON 备份。
+仍有问题可到 [Issues](https://github.com/Xuan-lprk/smart-body-scale/issues)反馈：提供 App 版本、macOS 版本、芯片类型、秤型号、复现步骤及准确报错。公开前请遮住姓名、生日、健康数值和蓝牙设备标识，不要直接上传完整 JSON 备份。

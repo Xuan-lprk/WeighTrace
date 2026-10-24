@@ -10,7 +10,7 @@ Have an `AFU-WL-TZ-A1` scale and want to weigh yourself without the vendor app? 
 
 After weighing, follow your trends, back up your records, and compare both local ADC estimates with Afu reference results.
 
-[Download the Mac test build](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases) · [Mac installation guide](docs/MAC_INSTALL.md) (Chinese) · [Changelog](docs/CHANGELOG.md) (Chinese) · [Report an issue](https://github.com/Xuan-lprk/smart-body-scale-IOS/issues)
+[Download the Mac test build](https://github.com/Xuan-lprk/smart-body-scale/releases) · [Mac installation guide](docs/MAC_INSTALL.md) (Chinese) · [Changelog](docs/CHANGELOG.md) (Chinese) · [Report an issue](https://github.com/Xuan-lprk/smart-body-scale/issues)
 
 > **Check your model first: the currently verified device is `AFU-WL-TZ-A1` (the one sold for one cent).** Not every Ant Afu, Welland, or other brand scale can connect. Weight is measured by the scale; body composition is estimated locally, may differ from the vendor app, and is not intended for medical decisions.
 
@@ -18,7 +18,7 @@ After weighing, follow your trends, back up your records, and compare both local
 
 | Device | Installation | Apple Health |
 |---|---|---|
-| Mac: macOS 15.6+, Apple silicon or Intel | Open [Releases](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases), expand **Assets**, and download `AFU-Scale-Mac-…-test.dmg` | Not available; history stays on the Mac |
+| Mac: macOS 15.6+, Apple silicon or Intel | Open [Releases](https://github.com/Xuan-lprk/smart-body-scale/releases), expand **Assets**, and download `AFU-Scale-Mac-…-test.dmg` | Not available; history stays on the Mac |
 | iPhone / iPad: iOS / iPadOS 18.6+ | Currently requires building with Xcode on a Mac; see [Building from Source](#building-from-source) | Optional read/write access |
 | Android | No app yet; I may port it if there is interest | Not applicable |
 

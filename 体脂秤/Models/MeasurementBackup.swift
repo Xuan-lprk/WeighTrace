@@ -120,18 +120,18 @@ struct MeasurementBackup: Codable {
         }
         let localReferences = Dictionary(uniqueKeysWithValues: local.references.map { ($0.measurementID, $0) })
         let referenceByID = Dictionary(uniqueKeysWithValues: local.references.map { ($0.id, $0) })
-        var referenceRow = BackupPreviewRow(title: String(localized: "阿福参考"), added: 0, identical: 0, conflicts: 0)
+        var referenceRow = BackupPreviewRow(title: String(appLocalized: "阿福参考"), added: 0, identical: 0, conflicts: 0)
         for reference in references {
             if let existing = referenceByID[reference.id] ?? localReferences[reference.measurementID] {
                 if existing == reference { referenceRow.identical += 1 } else { referenceRow.conflicts += 1 }
             } else { referenceRow.added += 1 }
         }
-        return [row(String(localized: "本人资料"), [primary], [local.primary]),
-                row(String(localized: "家庭成员"), members, local.members),
-                row(String(localized: "测量记录"), measurements, local.measurements), referenceRow,
-                row(String(localized: "检查报告"), repeatChecks ?? [], local.repeatChecks ?? []),
-                row(String(localized: "称重对象"), weighedSubjects ?? [], local.weighedSubjects ?? []),
-                row(String(localized: "抱物记录"), assistedRecords ?? [], local.assistedRecords ?? [])]
+        return [row(String(appLocalized: "本人资料"), [primary], [local.primary]),
+                row(String(appLocalized: "家庭成员"), members, local.members),
+                row(String(appLocalized: "测量记录"), measurements, local.measurements), referenceRow,
+                row(String(appLocalized: "检查报告"), repeatChecks ?? [], local.repeatChecks ?? []),
+                row(String(appLocalized: "称重对象"), weighedSubjects ?? [], local.weighedSubjects ?? []),
+                row(String(appLocalized: "抱物记录"), assistedRecords ?? [], local.assistedRecords ?? [])]
     }
 
     func conflictDetails(against local: Self) -> [BackupConflict] {
@@ -140,7 +140,7 @@ struct MeasurementBackup: Codable {
             "\(member.name) · \(member.sex.rawValue) · \(member.height) cm · \(member.birthDate.formatted(date: .numeric, time: .omitted)) · \(member.referenceWeight) kg"
         }
         if primary != local.primary {
-            conflicts.append(BackupConflict(id: primary.id, title: String(localized: "本人资料"),
+            conflicts.append(BackupConflict(id: primary.id, title: String(appLocalized: "本人资料"),
                 local: describe(local.primary), incoming: describe(primary)))
         }
         for member in members {
@@ -160,27 +160,27 @@ struct MeasurementBackup: Codable {
         }
         for reference in references {
             if let old = local.references.first(where: { $0.id == reference.id || $0.measurementID == reference.measurementID }), old != reference {
-                conflicts.append(BackupConflict(id: reference.id, title: String(localized: "阿福参考") + " · " + reference.measurementID.uuidString,
+                conflicts.append(BackupConflict(id: reference.id, title: String(appLocalized: "阿福参考") + " · " + reference.measurementID.uuidString,
                     local: "\(old.measuredAt.formatted()) · \(old.weight) kg · \(old.bodyFat)% · \(old.note ?? "")",
                     incoming: "\(reference.measuredAt.formatted()) · \(reference.weight) kg · \(reference.bodyFat)% · \(reference.note ?? "")"))
             }
         }
         for report in repeatChecks ?? [] {
             if let old = (local.repeatChecks ?? []).first(where: { $0.id == report.id }), old != report {
-                conflicts.append(BackupConflict(id: report.id, title: String(localized: "检查报告"),
+                conflicts.append(BackupConflict(id: report.id, title: String(appLocalized: "检查报告"),
                     local: old.date.formatted() + " · " + old.measurements.map { String($0.weight) }.joined(separator: ", "),
                     incoming: report.date.formatted() + " · " + report.measurements.map { String($0.weight) }.joined(separator: ", ")))
             }
         }
         for subject in weighedSubjects ?? [] {
             if let old = (local.weighedSubjects ?? []).first(where: { $0.id == subject.id }), old != subject {
-                conflicts.append(BackupConflict(id: subject.id, title: String(localized: "称重对象"),
+                conflicts.append(BackupConflict(id: subject.id, title: String(appLocalized: "称重对象"),
                     local: old.name + " · " + old.kind.title, incoming: subject.name + " · " + subject.kind.title))
             }
         }
         for record in assistedRecords ?? [] {
             if let old = (local.assistedRecords ?? []).first(where: { $0.id == record.id }), old != record {
-                conflicts.append(BackupConflict(id: record.id, title: String(localized: "抱物记录"),
+                conflicts.append(BackupConflict(id: record.id, title: String(appLocalized: "抱物记录"),
                     local: old.date.formatted() + " · \(old.baselineWeight) / \(old.combinedWeight) kg",
                     incoming: record.date.formatted() + " · \(record.baselineWeight) / \(record.combinedWeight) kg"))
             }
@@ -241,8 +241,8 @@ enum BackupError: LocalizedError {
     case invalid, version
     var errorDescription: String? {
         switch self {
-        case .invalid: String(localized: "备份数据不完整或无效，请选择本 App 导出的完整 JSON 备份。")
-        case .version: String(localized: "不支持此备份格式或版本，请更新 App 后重试。")
+        case .invalid: String(appLocalized: "备份数据不完整或无效，请选择本 App 导出的完整 JSON 备份。")
+        case .version: String(appLocalized: "不支持此备份格式或版本，请更新 App 后重试。")
         }
     }
 }

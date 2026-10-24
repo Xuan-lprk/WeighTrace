@@ -11,6 +11,7 @@ struct ProfileView: View {
     @AppStorage(HealthKitManager.bodyFatKey) private var syncBodyFat = true
     @AppStorage(HealthKitManager.leanBodyMassKey) private var syncLeanBodyMass = true
     @AppStorage(ImpedanceADCChoice.storageKey) private var selectedADCIndex = ImpedanceADCChoice.first.rawValue
+    @AppStorage(AppLanguage.storageKey, store: .standard) private var language = AppLanguage.system.rawValue
     @State private var showingAddMember = false
     var body: some View {
         NavigationStack { Form {
@@ -18,7 +19,7 @@ struct ProfileView: View {
                 NavigationLink("备份与导出") { BackupView() }
             }
             Section("我的设备") {
-                HStack { Image(systemName: "scalemass").foregroundStyle(.teal); VStack(alignment: .leading) { Text(scale.deviceName ?? String(localized: "AFU Welland 体脂秤")); Text(scale.connectionState.title).font(.caption).foregroundStyle(.secondary) }; Spacer(); Circle().fill(scale.connectionState.color).frame(width: 9, height: 9) }
+                HStack { Image(systemName: "scalemass").foregroundStyle(.teal); VStack(alignment: .leading) { Text(scale.deviceName ?? String(appLocalized: "AFU Welland 体脂秤")); Text(scale.connectionState.title).font(.caption).foregroundStyle(.secondary) }; Spacer(); Circle().fill(scale.connectionState.color).frame(width: 9, height: 9) }
                 Button { scale.startScan() } label: { Label("重新连接", systemImage: "arrow.clockwise") }
                 Button(role: .destructive) { scale.forgetPairedScale() } label: { Label("更换体脂秤", systemImage: "arrow.triangle.2.circlepath") }
             }
@@ -127,7 +128,7 @@ struct ProfileView: View {
 #endif
             Section {
                 ForEach(profile.members) { member in
-                    HStack { Image(systemName: "person.crop.circle").foregroundStyle(.teal); Text(member.name); Spacer(); Text(member.sex == .female ? String(localized: "女") : String(localized: "男")).font(.caption).foregroundStyle(.secondary) }
+                    HStack { Image(systemName: "person.crop.circle").foregroundStyle(.teal); Text(member.name); Spacer(); Text(member.sex == .female ? String(appLocalized: "女") : String(appLocalized: "男")).font(.caption).foregroundStyle(.secondary) }
                 }
                 .onDelete { profile.removeMembers(at: $0) }
                 Button { showingAddMember = true } label: { Label("添加家庭成员", systemImage: "person.badge.plus") }
@@ -155,7 +156,14 @@ struct ProfileView: View {
                     }
                 }
             }
-        }.navigationTitle("我的资料")
+    Section("显示与演示") {
+        Picker("语言", selection: $language) {
+            ForEach(AppLanguage.allCases) { option in
+                Text(option.title).tag(option.rawValue)
+            }
+        }
+    }
+}.navigationTitle("我的资料")
             .sheet(isPresented: $showingAddMember) { AddFamilyMemberView { profile.addMember($0) } }
             .onAppear {
 #if !targetEnvironment(macCatalyst)
@@ -191,7 +199,7 @@ struct AddFamilyMemberView: View {
             Stepper("身高 \(Int(height)) cm", value: $height, in: 100...230)
         }
         .navigationTitle("添加成员")
-        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("保存") { onSave(FamilyMember(name: name.isEmpty ? String(localized: "家庭成员") : name, sex: sex, height: height, birthDate: birthDate, referenceWeight: referenceWeight)); dismiss() }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) } }
+        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("保存") { onSave(FamilyMember(name: name.isEmpty ? String(appLocalized: "家庭成员") : name, sex: sex, height: height, birthDate: birthDate, referenceWeight: referenceWeight)); dismiss() }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) } }
         }
     }
 }

@@ -21,12 +21,12 @@ struct DashboardView: View {
                 
                 if let measurement = displayedMeasurement, !scale.isMeasuring {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(measurement.memberName ?? String(localized: "本人")).font(.headline)
+                        Text(measurement.memberName ?? String(appLocalized: "本人")).font(.headline)
                         if let previous = scale.history.filter({ $0.memberID == measurement.memberID && $0.date < measurement.date }).max(by: { $0.date < $1.date }) {
-                            Text(String(format: String(localized: "较上次体重 %+.2f kg"), measurement.weight - previous.weight))
+                            Text(String(format: String(appLocalized: "较上次体重 %+.2f kg"), measurement.weight - previous.weight))
                                 .font(.subheadline)
                         }
-                        Text(measurement.adcIndex.map { String(format: String(localized: "本次采用 ADC %lld，双路数据按实际接收保存"), $0 + 1) } ?? String(localized: "这条记录未保存 ADC 选择"))
+                        Text(measurement.adcIndex.map { String(format: String(appLocalized: "本次采用 ADC %lld，双路数据按实际接收保存"), $0 + 1) } ?? String(appLocalized: "这条记录未保存 ADC 选择"))
                             .font(.caption).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     metricGrid(measurement)
@@ -97,7 +97,7 @@ struct DashboardView: View {
             
             // Weight display
             VStack(spacing: 4) {
-                    Text(scale.liveWeight <= 0 && displayedMeasurement != nil ? String(localized: "最近记录") : (scale.isStable ? String(localized: "测量完成") : (scale.liveWeight > 0 ? String(localized: "正在测量...") : String(localized: "请赤脚站上体脂秤"))))
+                    Text(scale.liveWeight <= 0 && displayedMeasurement != nil ? String(appLocalized: "最近记录") : (scale.isStable ? String(appLocalized: "测量完成") : (scale.liveWeight > 0 ? String(appLocalized: "正在测量...") : String(appLocalized: "请赤脚站上体脂秤"))))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 

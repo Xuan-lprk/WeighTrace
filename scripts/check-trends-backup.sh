@@ -9,6 +9,7 @@ cd "$PROJECT_ROOT"
 xcrun --sdk macosx swiftc -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
     -target "$(uname -m)-apple-macosx15.6" \
     体脂秤/Models/Models.swift 体脂秤/Models/ComparisonModels.swift \
+    体脂秤/Services/AppLanguage.swift \
     体脂秤/Services/BodyAlgorithm.swift 体脂秤/Models/MeasurementBackup.swift \
     体脂秤/Models/Repeatability.swift \
     体脂秤/Models/AssistedWeighing.swift \

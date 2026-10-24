@@ -21,7 +21,7 @@ import SwiftUI
             members = saved
         }
     }
-    var primaryMember: FamilyMember { FamilyMember(id: primaryID, name: String(localized: "本人"), sex: sex, height: height, birthDate: birthDate, referenceWeight: 60) }
+    var primaryMember: FamilyMember { FamilyMember(id: primaryID, name: String(appLocalized: "本人"), sex: sex, height: height, birthDate: birthDate, referenceWeight: 60) }
     func addMember(_ member: FamilyMember) { members.append(member); saveMembers() }
     func restoreBackup(primary: FamilyMember, family: [FamilyMember]) {
         sex = primary.sex

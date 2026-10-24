@@ -31,7 +31,7 @@ final class MacUpdateChecker: ObservableObject {
         guard !isChecking else { return }
         isChecking = true
         downloadURL = nil
-        status = String(localized: "正在检查更新…")
+        status = String(appLocalized: "正在检查更新…")
         defer { isChecking = false }
         do {
             let url = URL(string: "https://api.github.com/repos/Xuan-lprk/smart-body-scale-IOS/releases?per_page=30")!
@@ -57,7 +57,7 @@ final class MacUpdateChecker: ObservableObject {
                     version.compare(current, options: .numeric) == .orderedDescending
             }.sorted { $0.tag_name.compare($1.tag_name, options: .numeric) == .orderedDescending }
             guard let release = newer.first else {
-                status = String(localized: "暂无可用的 Mac 新版本")
+                status = String(appLocalized: "暂无可用的 Mac 新版本")
                 return
             }
             guard release.html_url.scheme == "https", release.html_url.host == "github.com",
@@ -65,9 +65,9 @@ final class MacUpdateChecker: ObservableObject {
                 throw URLError(.badURL)
             }
             downloadURL = release.html_url
-            status = String(localized: "发现新版本") + " " + release.tag_name
+            status = String(appLocalized: "发现新版本") + " " + release.tag_name
         } catch {
-            status = String(localized: "检查更新失败，请稍后重试")
+            status = String(appLocalized: "检查更新失败，请稍后重试")
         }
     }
 }

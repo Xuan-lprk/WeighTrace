@@ -13,7 +13,7 @@ struct ADCComparisonView: View {
         for record in scale.history {
             if let id = record.memberID, !members.contains(where: { $0.id == id }) {
                 members.append(record.profileSnapshot?.member(id: id, name: record.memberName, referenceWeight: record.weight)
-                    ?? FamilyMember(id: id, name: record.memberName ?? String(localized: "未归属"), sex: .female, height: 165, birthDate: Date(), referenceWeight: record.weight))
+                    ?? FamilyMember(id: id, name: record.memberName ?? String(appLocalized: "未归属"), sex: .female, height: 165, birthDate: Date(), referenceWeight: record.weight))
             }
         }
         return members
@@ -123,7 +123,7 @@ private struct StatisticsRow: View {
                     .foregroundStyle(.teal)
             }
             Text(verbatim: String(
-                format: String(localized: "平均偏差 %@ · 中位偏差 %@ · RMSE %.2f"),
+                format: String(appLocalized: "平均偏差 %@ · 中位偏差 %@ · RMSE %.2f"),
                 locale: .current,
                 signed(statistics.meanBias),
                 signed(statistics.medianBias),
@@ -150,14 +150,14 @@ private struct ComparisonRow: View {
                     .fontWeight(.semibold)
                 Spacer()
                 Label(
-                    comparison.isQualified ? String(localized: "合格") : String(localized: "仅保存"),
+                    comparison.isQualified ? String(appLocalized: "合格") : String(appLocalized: "仅保存"),
                     systemImage: comparison.isQualified ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
                 )
                 .font(.caption)
                 .foregroundStyle(comparison.isQualified ? .green : .orange)
             }
             Text(verbatim: String(
-                format: String(localized: "阿福 %.1f%% · ADC 1 %.1f%% · ADC 2 %.1f%%"),
+                format: String(appLocalized: "阿福 %.1f%% · ADC 1 %.1f%% · ADC 2 %.1f%%"),
                 locale: .current,
                 comparison.reference.bodyFat,
                 comparison.adc1Measurement.bodyFat,
@@ -165,7 +165,7 @@ private struct ComparisonRow: View {
             ))
             .font(.callout)
             Text(verbatim: String(
-                format: String(localized: "差值：ADC 1 %@ · ADC 2 %@ 个百分点"),
+                format: String(appLocalized: "差值：ADC 1 %@ · ADC 2 %@ 个百分点"),
                 locale: .current,
                 signed(comparison.adc1Error),
                 signed(comparison.adc2Error)
@@ -224,10 +224,10 @@ struct ADCComparisonDetailView: View {
             }
 
             Section("计算资料") {
-                Text(comparison.measurement.algorithmVersion ?? String(localized: "旧算法"))
+                Text(comparison.measurement.algorithmVersion ?? String(appLocalized: "旧算法"))
                 if let snapshot = comparison.measurement.profileSnapshot {
                     Text("\(snapshot.height, specifier: "%.0f") cm")
-                    Text(snapshot.sex == .male ? String(localized: "男") : String(localized: "女"))
+                    Text(snapshot.sex == .male ? String(appLocalized: "男") : String(appLocalized: "女"))
                     Text(snapshot.birthDate, format: .dateTime.year().month().day())
                 } else {
                     Text("旧记录缺少资料快照，重算使用当前本人资料，仅供查看。")
@@ -447,7 +447,7 @@ struct OfficialReferenceImportView: View {
                     LabeledContent(
                         "时间差",
                         value: String(
-                            format: String(localized: "%.1f 分钟"),
+                            format: String(appLocalized: "%.1f 分钟"),
                             locale: .current,
                             minutes
                         )
@@ -536,7 +536,7 @@ struct OfficialReferenceImportView: View {
             }
         }
         guard !allLines.isEmpty else {
-            ocrStatus = String(localized: "没有从所选图片读到文字，仍可手动填写。")
+            ocrStatus = String(appLocalized: "没有从所选图片读到文字，仍可手动填写。")
             isReadingScreenshots = false
             return
         }
@@ -551,9 +551,9 @@ struct OfficialReferenceImportView: View {
             draft.boneMass != nil
         ].filter { $0 }.count
         let failureSuffix = failedImageCount > 0
-            ? String(localized: "；有 \(failedImageCount) 张图片识别失败，可重新选择")
+            ? String(appLocalized: "；有 \(failedImageCount) 张图片识别失败，可重新选择")
             : ""
-        ocrStatus = String(localized: "已识别并填入 \(found) 个主要字段\(failureSuffix)，请核对小数和测量时间。")
+        ocrStatus = String(appLocalized: "已识别并填入 \(found) 个主要字段\(failureSuffix)，请核对小数和测量时间。")
         isReadingScreenshots = false
     }
 

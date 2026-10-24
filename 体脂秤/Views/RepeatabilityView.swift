@@ -16,7 +16,7 @@ struct RepeatabilityView: View {
                     if capture.measurements.count == 3 {
                         Label("检查完成，报告已保存", systemImage: "checkmark.circle")
                     } else {
-                        Text(capture.waitingForStepOff ? String(localized: "请先离秤，等秤发送低于 1 kg 的读数后再上秤。") : String(localized: "请重新上秤，等待稳定体重和两路有效阻抗。"))
+                        Text(capture.waitingForStepOff ? String(appLocalized: "请先离秤，等秤发送低于 1 kg 的读数后再上秤。") : String(appLocalized: "请重新上秤，等待稳定体重和两路有效阻抗。"))
                     }
                     Button(capture.measurements.count == 3 ? "退出检查模式" : "结束本次检查", role: .cancel) { scale.endRepeatCheck() }
                 } else {
@@ -35,7 +35,7 @@ struct RepeatabilityView: View {
                         VStack(alignment: .leading) {
                             Text(report.date, format: .dateTime.year().month().day().hour().minute())
                             Text(report.measurements.first?.memberName ?? "")
-                            Text(report.hasLargeVariation ? String(localized: "本次波动较大") : String(localized: "本次重复性较稳定"))
+                            Text(report.hasLargeVariation ? String(appLocalized: "本次波动较大") : String(appLocalized: "本次重复性较稳定"))
                                 .font(.caption).foregroundStyle(report.hasLargeVariation ? .orange : .teal)
                         }
                     }.swipeActions {
@@ -53,18 +53,18 @@ struct RepeatabilityReportView: View {
         let spread = Spread(values)
         return VStack(alignment: .leading) {
             Text(title).font(.headline)
-            Text(String(format: String(localized: "中位数 %.2f · 范围 %.2f–%.2f · 波动 %.2f %@"), spread.median, spread.minimum, spread.maximum, spread.range, unit))
+            Text(String(format: String(appLocalized: "中位数 %.2f · 范围 %.2f–%.2f · 波动 %.2f %@"), spread.median, spread.minimum, spread.maximum, spread.range, unit))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
     var body: some View {
         List {
             Section {
-                Text(report.hasLargeVariation ? String(localized: "本次波动较大") : String(localized: "本次重复性较稳定"))
-                spreadRow(String(localized: "体重"), values: report.measurements.map(\.weight), unit: "kg")
+                Text(report.hasLargeVariation ? String(appLocalized: "本次波动较大") : String(appLocalized: "本次重复性较稳定"))
+                spreadRow(String(appLocalized: "体重"), values: report.measurements.map(\.weight), unit: "kg")
                 ForEach(0..<2) { index in
                     spreadRow("ADC \(index + 1) Ω", values: report.measurements.compactMap { $0.normalizedImpedances?[index] }, unit: "Ω")
-                    spreadRow("ADC \(index + 1) " + String(localized: "体脂率"), values: estimates(index).map(\.bodyFat), unit: "%")
+                    spreadRow("ADC \(index + 1) " + String(appLocalized: "体脂率"), values: estimates(index).map(\.bodyFat), unit: "%")
                 }
                 Text("体重范围超过 0.2 kg，或任一路阻抗范围超过其中位数 5% 时标记波动较大。这是重复性提示，不是医学准确性判断。")
                     .font(.caption).foregroundStyle(.secondary)

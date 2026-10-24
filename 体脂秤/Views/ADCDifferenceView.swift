@@ -35,14 +35,14 @@ struct ADCDifferenceView: View {
                     Chart {
                         ForEach(visible) { item in
                             ForEach(0..<3) { index in
-                                let name = index == 0 ? String(localized: "阿福参考") : "ADC \(index)"
+                                let name = index == 0 ? String(appLocalized: "阿福参考") : "ADC \(index)"
                                 let value = index == 0 ? item.reference.bodyFat : (index == 1 ? item.adc1Measurement.bodyFat : item.adc2Measurement.bodyFat)
                                 LineMark(x: .value("日期", item.measurement.date), y: .value("体脂率", value), series: .value("段", "\(name)-\(groups[item.id] ?? 0)"))
                                     .foregroundStyle(by: .value("来源", name)).symbol(by: .value("来源", name))
                             }
                         }
                         if let selected { RuleMark(x: .value("日期", selected.measurement.date)).foregroundStyle(.secondary) }
-                    }.chartForegroundStyleScale(domain: [String(localized: "阿福参考"), "ADC 1", "ADC 2"], range: [Color.gray, Color.teal, Color.orange])
+                    }.chartForegroundStyleScale(domain: [String(appLocalized: "阿福参考"), "ADC 1", "ADC 2"], range: [Color.gray, Color.teal, Color.orange])
                         .chartYScale(domain: .automatic(includesZero: false))
                         .chartXSelection(value: $selectedDate).frame(height: 250)
                     Text("与阿福差值（百分点）").font(.headline)

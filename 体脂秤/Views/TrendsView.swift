@@ -11,12 +11,12 @@ struct TrendsView: View {
     @State private var selectedDate: Date?
 
     private var memberOptions: [(key: String, name: String)] {
-        var result = [(profile.primaryMember.id.uuidString, String(localized: "本人"))]
+        var result = [(profile.primaryMember.id.uuidString, String(appLocalized: "本人"))]
         for member in profile.members { result.append((member.id.uuidString, member.name)) }
         for record in scale.history {
             let key = record.memberID?.uuidString ?? "unknown"
             if !result.contains(where: { $0.0 == key }) {
-                result.append((key, record.memberName ?? String(localized: "未归属")))
+                result.append((key, record.memberName ?? String(appLocalized: "未归属")))
             }
         }
         return result

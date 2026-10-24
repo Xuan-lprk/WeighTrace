@@ -104,9 +104,9 @@ struct AssistedWeighingView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(capture.subject.name).font(.title3.bold())
             HStack(spacing: 10) {
-                stepChip("1", title: String(localized: "称自己"), done: capture.baselineWeight != nil)
+                stepChip("1", title: String(appLocalized: "称自己"), done: capture.baselineWeight != nil)
                 Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                stepChip("2", title: String(localized: "抱着称"), done: capture.result != nil)
+                stepChip("2", title: String(appLocalized: "抱着称"), done: capture.result != nil)
             }
             if let result = capture.result {
                 Text("约 \(result.weight, specifier: "%.2f") kg")
@@ -116,8 +116,8 @@ struct AssistedWeighingView: View {
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             } else {
                 if let baseline = capture.baselineWeight { Text("本人重量 \(baseline, specifier: "%.2f") kg").font(.headline) }
-                Text(capture.waitingForStepOff ? String(localized: "请离秤，等待低于 1 kg 的读数后再上秤。") :
-                    (capture.baselineWeight == nil ? String(localized: "请本人单独上秤，站稳等待稳定读数。") : String(localized: "请同一个人抱着对象上秤，站稳等待稳定读数。")))
+                Text(capture.waitingForStepOff ? String(appLocalized: "请离秤，等待低于 1 kg 的读数后再上秤。") :
+                    (capture.baselineWeight == nil ? String(appLocalized: "请本人单独上秤，站稳等待稳定读数。") : String(appLocalized: "请同一个人抱着对象上秤，站稳等待稳定读数。")))
                 if scale.liveWeight > 3 {
                     Text("实时 \(scale.liveWeight, specifier: "%.2f") kg").font(.title2.monospacedDigit())
                 }

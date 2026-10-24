@@ -83,9 +83,9 @@ enum MeasurementTag: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .morning: String(localized: "晨起")
-        case .afterMeal: String(localized: "饭后")
-        case .afterExercise: String(localized: "运动后")
+        case .morning: String(appLocalized: "晨起")
+        case .afterMeal: String(appLocalized: "饭后")
+        case .afterExercise: String(appLocalized: "运动后")
         }
     }
 }
@@ -95,12 +95,12 @@ enum DashboardMetric: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .bodyFat: String(localized: "体脂率")
+        case .bodyFat: String(appLocalized: "体脂率")
         case .bmi: "BMI"
-        case .water: String(localized: "体水分率")
-        case .muscle: String(localized: "肌肉率")
-        case .bone: String(localized: "骨量")
-        case .protein: String(localized: "蛋白质率")
+        case .water: String(appLocalized: "体水分率")
+        case .muscle: String(appLocalized: "肌肉率")
+        case .bone: String(appLocalized: "骨量")
+        case .protein: String(appLocalized: "蛋白质率")
         }
     }
     func value(_ m: BodyMeasurement) -> String {
@@ -114,7 +114,7 @@ enum DashboardMetric: String, CaseIterable, Identifiable {
         }
     }
     var source: String {
-        self == .bodyFat ? String(localized: "BIA 公式估算") :
-        (self == .bmi ? String(localized: "身高与体重计算") : String(localized: "比例粗略推算"))
+        self == .bodyFat ? String(appLocalized: "BIA 公式估算") :
+        (self == .bmi ? String(appLocalized: "身高与体重计算") : String(appLocalized: "比例粗略推算"))
     }
 }

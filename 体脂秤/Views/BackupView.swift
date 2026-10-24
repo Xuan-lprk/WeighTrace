@@ -78,8 +78,8 @@ struct BackupView: View {
                     }
                     Toggle("使用备份覆盖冲突（包括本人资料）", isOn: $replaceConflicts)
                     Text(replaceConflicts
-                         ? String(localized: "相同 UUID 或同次测量的参考冲突时，采用备份内容。")
-                         : String(localized: "默认保留本机冲突内容，只新增缺少的记录。"))
+                         ? String(appLocalized: "相同 UUID 或同次测量的参考冲突时，采用备份内容。")
+                         : String(appLocalized: "默认保留本机冲突内容，只新增缺少的记录。"))
                         .font(.caption).foregroundStyle(.secondary)
                     Button("确认合并到本机") { restore(incoming) }
                     Button("取消导入", role: .cancel) { self.incoming = nil }
@@ -90,7 +90,7 @@ struct BackupView: View {
         .fileExporter(isPresented: $exporting, document: document, contentType: exportType,
                       defaultFilename: exportName) { result in
             switch result {
-            case .success: status = String(localized: "文件已导出")
+            case .success: status = String(appLocalized: "文件已导出")
             case .failure(let error): status = error.localizedDescription
             }
         }
@@ -132,7 +132,7 @@ struct BackupView: View {
             comparisons.restoreBackup(merged.references)
             profile.restoreBackup(primary: merged.primary, family: merged.members)
             incoming = nil
-            status = String(localized: "合并完成，重复导入不会增加同一条记录。Apple 健康未被修改。")
+            status = String(appLocalized: "合并完成，重复导入不会增加同一条记录。Apple 健康未被修改。")
         } catch { status = error.localizedDescription }
     }
 }

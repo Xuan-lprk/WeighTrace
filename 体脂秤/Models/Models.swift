@@ -22,7 +22,7 @@ struct MeasurementProfileSnapshot: Codable, Equatable {
     func member(id: UUID?, name: String?, referenceWeight: Double) -> FamilyMember {
         FamilyMember(
             id: id ?? UUID(),
-            name: name ?? String(localized: "本人"),
+            name: name ?? String(appLocalized: "本人"),
             sex: sex,
             height: height,
             birthDate: birthDate,

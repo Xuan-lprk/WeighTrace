@@ -5,9 +5,9 @@ enum WeighedSubjectKind: String, CaseIterable, Codable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .pet: String(localized: "宠物")
-        case .luggage: String(localized: "行李")
-        case .parcel: String(localized: "包裹")
+        case .pet: String(appLocalized: "宠物")
+        case .luggage: String(appLocalized: "行李")
+        case .parcel: String(appLocalized: "包裹")
         }
     }
     var icon: String {
@@ -49,11 +49,11 @@ struct AssistedWeighingCapture {
         if let baselineWeight, let baselineDate {
             guard date.timeIntervalSince(baselineDate) >= 0, date.timeIntervalSince(baselineDate) <= 600 else {
                 self.baselineWeight = nil; self.baselineDate = nil
-                message = String(localized: "间隔超过 10 分钟，请离秤后重新称自己。")
+                message = String(appLocalized: "间隔超过 10 分钟，请离秤后重新称自己。")
                 return nil
             }
             guard weight > baselineWeight else {
-                message = String(localized: "抱物后的重量应高于本人重量，请离秤后重试第二步。")
+                message = String(appLocalized: "抱物后的重量应高于本人重量，请离秤后重试第二步。")
                 return nil
             }
             let record = AssistedWeightRecord(id: UUID(), subjectID: subject.id, baselineDate: baselineDate,
@@ -67,7 +67,7 @@ struct AssistedWeighingCapture {
 
     mutating func disconnect() {
         waitingForStepOff = true
-        if result == nil { baselineWeight = nil; baselineDate = nil; message = String(localized: "连接中断，请重新连接并从称自己开始。") }
+        if result == nil { baselineWeight = nil; baselineDate = nil; message = String(appLocalized: "连接中断，请重新连接并从称自己开始。") }
     }
 }
 

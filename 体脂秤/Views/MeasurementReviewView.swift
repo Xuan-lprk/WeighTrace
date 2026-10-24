@@ -122,14 +122,14 @@ struct MeasurementReviewView: View {
                         Group {
 #if targetEnvironment(macCatalyst)
                             Label(
-                                String(localized: "本次已保存到这台 Mac"),
+                                String(appLocalized: "本次已保存到这台 Mac"),
                                 systemImage: "internaldrive"
                             )
 #else
                             Label(
                                 healthSyncEnabled
-                                    ? String(localized: "本地记录已保存；Apple 健康同步按当前权限执行")
-                                    : String(localized: "本次已保存为 App 本地记录"),
+                                    ? String(appLocalized: "本地记录已保存；Apple 健康同步按当前权限执行")
+                                    : String(appLocalized: "本次已保存为 App 本地记录"),
                                 systemImage: healthSyncEnabled ? "heart.text.square" : "internaldrive"
                             )
 #endif

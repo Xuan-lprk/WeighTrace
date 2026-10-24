@@ -21,7 +21,7 @@ struct HistoryView: View {
                     NavigationLink(destination: MeasurementDetailView(measurement: item)) {
                         HStack {
                             VStack(alignment: .leading) {
-                                Text(item.memberName ?? String(localized: "本人")).fontWeight(.semibold)
+                                Text(item.memberName ?? String(appLocalized: "本人")).fontWeight(.semibold)
                                 Text(item.date, format: .dateTime.year().month().day().hour().minute())
                                 Text("BMI \(item.bmi, specifier: "%.2f") · 体脂 \(item.bodyFat, specifier: "%.1f")%")
                                     .font(.caption)
@@ -106,7 +106,7 @@ struct MeasurementDetailView: View {
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(measurement.memberName ?? String(localized: "本人"))
+                        Text(measurement.memberName ?? String(appLocalized: "本人"))
                             .font(.title3)
                             .fontWeight(.bold)
                         Text(measurement.date, format: .dateTime.year().month().day().hour().minute())
@@ -160,7 +160,7 @@ struct MeasurementDetailView: View {
                         Text("双 ADC 原始档案")
                             .font(.headline)
                         Spacer()
-                        Text(measurement.algorithmVersion ?? String(localized: "旧算法"))
+                        Text(measurement.algorithmVersion ?? String(appLocalized: "旧算法"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

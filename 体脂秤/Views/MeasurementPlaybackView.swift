@@ -39,7 +39,7 @@ struct MeasurementPlaybackView: View {
                             if progress >= 1 { progress = 0 }
                             playing.toggle()
                         } label: {
-                            Label(playing ? String(localized: "暂停回放") : String(localized: "播放回忆"), systemImage: playing ? "pause.fill" : "play.fill")
+                            Label(playing ? String(appLocalized: "暂停回放") : String(appLocalized: "播放回忆"), systemImage: playing ? "pause.fill" : "play.fill")
                                 .font(.headline).padding(.horizontal, 8).padding(.vertical, 5)
                         }.buttonStyle(.borderedProminent).tint(.teal).disabled(ordered.count < 2)
                         Spacer()
@@ -130,7 +130,7 @@ struct MeasurementPlaybackView: View {
 
     private func eventCard(current: BodyMeasurement, index: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(current.memberName ?? String(localized: "本人")).font(.headline)
+            Text(current.memberName ?? String(appLocalized: "本人")).font(.headline)
             if index > 0 {
                 let changes = MeasurementTrends.changes(ordered[index - 1], current)
                 if !changes.isEmpty { Label(changes.joined(separator: " · "), systemImage: "flag.fill").font(.caption).foregroundStyle(.orange) }

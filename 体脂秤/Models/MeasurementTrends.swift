@@ -5,8 +5,8 @@ enum TrendMetric: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .weight: String(localized: "体重")
-        case .bodyFat: String(localized: "体脂率")
+        case .weight: String(appLocalized: "体重")
+        case .bodyFat: String(appLocalized: "体脂率")
         case .bmi: "BMI"
         }
     }
@@ -52,10 +52,10 @@ enum MeasurementTrends {
 
     static func changes(_ before: BodyMeasurement, _ after: BodyMeasurement) -> [String] {
         var result: [String] = []
-        if before.adcIndex != after.adcIndex { result.append(String(localized: "ADC 改变")) }
-        if before.algorithmVersion != after.algorithmVersion { result.append(String(localized: "算法改变")) }
+        if before.adcIndex != after.adcIndex { result.append(String(appLocalized: "ADC 改变")) }
+        if before.algorithmVersion != after.algorithmVersion { result.append(String(appLocalized: "算法改变")) }
         if let old = before.profileSnapshot, let new = after.profileSnapshot, old != new {
-            result.append(String(localized: "资料改变"))
+            result.append(String(appLocalized: "资料改变"))
         }
         return result
     }

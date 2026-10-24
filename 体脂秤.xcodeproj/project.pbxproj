@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		52A4AF1E30072FF900F51607 /* 体脂秤.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "体脂秤.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		52A4AF1E30072FF900F51607 /* WeighTrace.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WeighTrace.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -267,6 +267,7 @@
 				CURRENT_PROJECT_VERSION = 7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "秤迹";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "需要使用蓝牙连接体脂秤以传输体重及体脂测量数据。";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "需要使用蓝牙连接体脂秤以传输体重及体脂测量数据。";
 				"INFOPLIST_KEY_NSHealthShareUsageDescription[sdk=iphoneos*]" = "读取体重、BMI、体脂率和去脂体重，用于在本机识别记录来自哪些体重秤或 App，并进行来源对比。";
@@ -288,16 +289,16 @@
 				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = xuanlprk;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = maccatalyst.xuanlprk;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = WeighTrace;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -315,6 +316,7 @@
 				CURRENT_PROJECT_VERSION = 7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "秤迹";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "需要使用蓝牙连接体脂秤以传输体重及体脂测量数据。";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "需要使用蓝牙连接体脂秤以传输体重及体脂测量数据。";
 				"INFOPLIST_KEY_NSHealthShareUsageDescription[sdk=iphoneos*]" = "读取体重、BMI、体脂率和去脂体重，用于在本机识别记录来自哪些体重秤或 App，并进行来源对比。";
@@ -336,16 +338,16 @@
 				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = xuanlprk;
 				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = maccatalyst.xuanlprk;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = WeighTrace;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

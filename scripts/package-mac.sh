@@ -13,7 +13,7 @@ OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 xcodebuild -quiet -project "$PROJECT_ROOT/体脂秤.xcodeproj" -scheme 体脂秤 \
     -configuration Release -destination 'generic/platform=macOS,variant=Mac Catalyst' \
     -derivedDataPath "$BUILD_ROOT/build" CODE_SIGNING_ALLOWED=NO build
-APP="$BUILD_ROOT/build/Build/Products/Release-maccatalyst/体脂秤.app"
+APP="$BUILD_ROOT/build/Build/Products/Release-maccatalyst/WeighTrace.app"
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")
 BUILD=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")
 NAME="AFU-Scale-Mac-$VERSION-$BUILD-test"
@@ -22,13 +22,14 @@ if [[ -e "$OUTPUT_DIR/$NAME.dmg" ]]; then
     exit 1
 fi
 # Ad-hoc signing provides local code integrity, not verified publisher identity.
+cp "$PROJECT_ROOT/design/WeighTrace.icns" "$APP/Contents/Resources/AppIcon.icns"
 codesign --force --deep --sign - --entitlements "$PROJECT_ROOT/体脂秤/体脂秤Mac.entitlements" "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
 mkdir -p "$BUILD_ROOT/image"
-ditto "$APP" "$BUILD_ROOT/image/体脂秤.app"
+ditto "$APP" "$BUILD_ROOT/image/WeighTrace.app"
 ln -s /Applications "$BUILD_ROOT/image/Applications"
 cp "$PROJECT_ROOT/docs/MAC_INSTALL.md" "$BUILD_ROOT/image/安装说明.md"
-hdiutil create -quiet -volname 'AFU Scale' -srcfolder "$BUILD_ROOT/image" \
+hdiutil create -quiet -volname 'WeighTrace' -srcfolder "$BUILD_ROOT/image" \
     -format UDZO "$OUTPUT_DIR/$NAME.dmg"
 shasum -a 256 "$OUTPUT_DIR/$NAME.dmg" > "$OUTPUT_DIR/$NAME.dmg.sha256"
 echo "Package: $OUTPUT_DIR/$NAME.dmg"

@@ -1,8 +1,14 @@
-# Ant Afu Body Composition Scale Client for iOS and macOS
+# WeighTrace · 秤迹
+
+<img src="docs/images/weightrace-icon.png" width="128" alt="WeighTrace icon: a bathroom scale with a teal history curve">
+
+**A direct Bluetooth client for AFU-WL scales · iPhone / iPad / Mac**
 
 English | [简体中文](README.md)
 
-Connect a supported scale, record your weight, and follow trends without a vendor account. Supports selected AFU-WL / Welland scales, with optional Apple Health integration on iPhone/iPad and local history on Mac.
+Have an `AFU-WL-TZ-A1` scale and want to weigh yourself without the vendor app? WeighTrace connects directly to this verified model over Bluetooth, reads weight and both ADC channels, and saves measurements locally without a vendor account. iPhone/iPad offer optional Apple Health integration; Mac can measure and record independently.
+
+After weighing, follow your trends, back up your records, and compare both local ADC estimates with Afu reference results.
 
 [Download the Mac test build](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases) · [Mac installation guide](docs/MAC_INSTALL.md) (Chinese) · [Changelog](docs/CHANGELOG.md) (Chinese) · [Report an issue](https://github.com/Xuan-lprk/smart-body-scale-IOS/issues)
 
@@ -18,7 +24,9 @@ Connect a supported scale, record your weight, and follow trends without a vendo
 
 Mac users **do not need Xcode or a developer account**. Download the `.dmg` installer, not the `Source code (zip)` shown on the page. See the [Mac installation guide](docs/MAC_INSTALL.md).
 
-1. Open the DMG and drag “体脂秤” into Applications.
+The app is named WeighTrace (秤迹). DMG filenames retain the `AFU-Scale-Mac-` prefix for compatibility with older update checkers.
+
+1. Open the DMG and drag “WeighTrace” into Applications.
 2. Launch it from Applications. The test build is not notarized by Apple. If macOS blocks it, verify the source and follow the system's Privacy & Security instructions. Do not disable system security protections; if macOS reports malware, stop and contact the publisher.
 3. Allow Bluetooth, quit other apps/devices connected to the scale, wake the scale, and select it in the app.
 

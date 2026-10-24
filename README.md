@@ -1,8 +1,14 @@
-# 蚂蚁阿福体脂秤 iOS / macOS 客户端
+# 秤迹 WeighTrace
+
+<img src="docs/images/weightrace-icon.png" width="128" alt="秤迹图标：体重秤与青绿色趋势曲线">
+
+**直接连接 AFU-WL 体脂秤的非官方客户端 · iPhone / iPad / Mac**
 
 简体中文 | [English](README_EN.md)
 
-用自己的设备连接体脂秤，记录体重、查看趋势，不需要注册厂商账号。支持特定 AFU-WL / Welland 体脂秤，iPhone/iPad 可选写入 Apple 健康，Mac 保存本地历史。
+买了那款 `AFU-WL-TZ-A1` 体脂秤，想不用厂商 App 也能称重？秤迹可以直接通过蓝牙连接这款已验证设备，读取体重和双路 ADC，在本地保存测量记录，不需要注册厂商账号。iPhone/iPad 可选写入 Apple 健康，Mac 可以独立称重和记录。
+
+称重后可以查看趋势、备份记录，并把两路 ADC 的本地估算与阿福参考结果对照。
 
 [下载 Mac 测试版](https://github.com/Xuan-lprk/smart-body-scale-IOS/releases)  · [更新日志](docs/CHANGELOG.md) · [反馈问题](https://github.com/Xuan-lprk/smart-body-scale-IOS/issues)
 
@@ -17,6 +23,8 @@
 | Android | 暂无 App，有需求我再移植 | 不适用 |
 
 Mac 用户**不需要 Xcode，也不需要开发者账号**。下载的是 `.dmg` 安装包，不是页面上的 `Source code (zip)` 源码。[Mac 安装说明](docs/MAC_INSTALL.md)
+
+App 名称为“秤迹 / WeighTrace”；DMG 暂保留 `AFU-Scale-Mac-` 文件名前缀，以兼容旧版的更新检查。
 
 
 

@@ -4,6 +4,7 @@ struct DashboardView: View {
     @EnvironmentObject private var scale: ScaleManager
     @EnvironmentObject private var profile: UserProfile
     @AppStorage("afu.dashboard.metrics") private var selectedMetrics = "bodyFat,bmi,water"
+    @State private var showingConnection = false
     private var displayedMeasurement: BodyMeasurement? { scale.currentMeasurement ?? scale.history.first }
 
     var body: some View {
@@ -52,9 +53,37 @@ struct DashboardView: View {
                     NavigationLink { DashboardSettingsView() } label: { Label("自定义首页", systemImage: "slider.horizontal.3") }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { scale.startScan() } label: {
+                    Button { showingConnection = true } label: {
                         Image(systemName: "antenna.radiowaves.left.and.right")
                     }
+                    .accessibilityLabel(Text("体脂秤连接"))
+                }
+            }
+            .sheet(isPresented: $showingConnection) {
+                NavigationStack {
+                    List {
+                        Section("连接状态") {
+                            Label(scale.connectionState.title, systemImage: scale.connectionState.icon)
+                            if let name = scale.deviceName { Text(name) }
+                            if scale.connectionState == .connected || scale.connectionState == .measuring {
+                                Text("体脂秤已连接，可以直接上秤测量。")
+                            } else {
+                                Button("重新搜索") { scale.startScan() }
+                                ForEach(scale.discoveredDevices) { device in
+                                    Button { scale.connect(device) } label: {
+                                        Text("\(device.name) · \(device.rssi) dBm")
+                                    }
+                                }
+                            }
+                        }
+                        Section {
+                            Text("若连接不上，请关闭手机上的其他体脂秤 App，并轻踩秤面唤醒设备。")
+                        }
+                    }
+                    .navigationTitle("体脂秤连接")
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { showingConnection = false }
+                    } }
                 }
             }
         }

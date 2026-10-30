@@ -4,6 +4,8 @@ import Charts
 struct TrendsView: View {
     @EnvironmentObject private var scale: ScaleManager
     @EnvironmentObject private var profile: UserProfile
+    @EnvironmentObject private var healthKit: HealthKitManager
+    @Environment(\.scenePhase) private var scenePhase
     @State private var memberKey = MeasurementBackup.primaryID.uuidString
     @State private var days = 30
     @State private var metric = TrendMetric.weight
@@ -33,6 +35,12 @@ struct TrendsView: View {
     }
 
     private var daily: [DailyWeightPoint] { MeasurementTrends.dailyWeights(records) }
+    private var healthPoints: [HealthTrendSample] {
+        guard memberKey == MeasurementBackup.primaryID.uuidString else { return [] }
+        let healthMetric: HealthBodyMetric = metric == .weight ? .weight : (metric == .bodyFat ? .bodyFat : .bmi)
+        let start = Calendar.current.date(byAdding: .day, value: -(max(days, 1) - 1), to: Calendar.current.startOfDay(for: .now))!
+        return healthKit.trendSamples.filter { $0.metric == healthMetric && (days == 0 || $0.date >= start) }
+    }
     private var rolling: [DailyWeightPoint] {
         // Compute using history before the viewport so the first visible day has a full window.
         let points = MeasurementTrends.rollingWeights(MeasurementTrends.dailyWeights(memberRecords.filter { $0.date <= Date() }))
@@ -79,6 +87,10 @@ struct TrendsView: View {
                     Picker("指标", selection: $metric) {
                         ForEach(TrendMetric.allCases) { Text($0.title).tag($0) }
                     }.pickerStyle(.segmented)
+                    if healthKit.isAvailable && memberKey == MeasurementBackup.primaryID.uuidString {
+                        healthTrends
+                    }
+                    Text("本地测量").font(.headline)
                     if records.isEmpty {
                         EmptyStateView(title: "这个范围内还没有记录", icon: "chart.xyaxis.line", message: "换个时间范围，或先完成一次测量。")
                     } else {
@@ -135,10 +147,46 @@ struct TrendsView: View {
                     .frame(maxWidth: .infinity)
             }
             .navigationTitle("测量趋势")
+            .task { await healthKit.refreshTrends() }
+            .refreshable { await healthKit.refreshTrends() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await healthKit.refreshTrends() } }
+            }
             .onChange(of: memberKey) { _, _ in selectedDate = nil }
             .onChange(of: days) { _, _ in selectedDate = nil }
             .onChange(of: metric) { _, _ in selectedDate = nil }
         }
+    }
+
+    private var healthTrends: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Apple 健康", systemImage: "heart.fill").font(.headline)
+                Spacer()
+                if healthKit.isLoadingTrends { ProgressView() }
+                Button("读取 / 刷新") { healthKit.requestTrendAccess() }
+                    .disabled(healthKit.isLoadingTrends)
+            }
+            if let latest = healthPoints.last {
+                Text("\(latest.value, specifier: "%.2f") \(metric.unit)").font(.title.bold())
+                Text("\(healthPoints.count) 条记录 · \(latest.sourceName)").font(.caption).foregroundStyle(.secondary)
+                Chart(healthPoints) { point in
+                    PointMark(x: .value("日期", point.date), y: .value(metric.title, point.value))
+                        .foregroundStyle(by: .value("来源", point.sourceName))
+                    LineMark(x: .value("日期", point.date), y: .value(metric.title, point.value),
+                             series: .value("来源", point.sourceID))
+                        .foregroundStyle(by: .value("来源", point.sourceName))
+                }
+                .chartYScale(domain: .automatic(includesZero: false))
+                .chartYAxisLabel(metric.unit)
+                .frame(height: 240)
+            } else {
+                Text(healthKit.trendStatusText.isEmpty ? String(appLocalized: "当前范围没有此指标的健康记录。可更改时间范围，或允许读取 Apple 健康。") : healthKit.trendStatusText)
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+            Text("仅展示本人的健康数据，按来源分别连线；不与本地测量合计，不修改或重新写入 Apple 健康。体脂率使用来源 App 的结果。")
+                .font(.caption).foregroundStyle(.secondary)
+        }.padding().background(.pink.opacity(0.06), in: RoundedRectangle(cornerRadius: 18))
     }
 
     private var summary: some View {

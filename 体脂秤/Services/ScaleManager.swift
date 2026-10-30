@@ -115,6 +115,9 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         impedance = 0; rawADCs = []; normalizedImpedances = []; selectedADCIndex = nil
         isStable = false
     }
+    func confirmRepeatStepOff() {
+        repeatCapture?.confirmStepOff()
+    }
     func removeRepeatReport(id: UUID) {
         repeatReports.removeAll { $0.id == id }; saveRepeatReports()
     }

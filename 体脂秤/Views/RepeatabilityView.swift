@@ -4,6 +4,7 @@ struct RepeatabilityView: View {
     @EnvironmentObject private var scale: ScaleManager
     @EnvironmentObject private var profile: UserProfile
     @State private var memberID = MeasurementBackup.primaryID
+    @State private var confirmingStepOff = false
     private var member: FamilyMember { ([profile.primaryMember] + profile.members).first { $0.id == memberID } ?? profile.primaryMember }
 
     var body: some View {
@@ -16,7 +17,14 @@ struct RepeatabilityView: View {
                     if capture.measurements.count == 3 {
                         Label("检查完成，报告已保存", systemImage: "checkmark.circle")
                     } else {
-                        Text(capture.waitingForStepOff ? String(appLocalized: "请先离秤，等秤发送低于 1 kg 的读数后再上秤。") : String(appLocalized: "请重新上秤，等待稳定体重和两路有效阻抗。"))
+                        Text(capture.waitingForStepOff ? String(appLocalized: "请先离秤。如果秤没有自动识别离秤，请点击下方按钮确认。") : String(appLocalized: "请重新上秤，等待稳定体重和两路有效阻抗。"))
+                        if capture.waitingForStepOff {
+                            Button("我已离秤，准备下一次") { confirmingStepOff = true }
+                        }
+                        if scale.connectionState != .connected && scale.connectionState != .measuring {
+                            Label(scale.connectionState.title, systemImage: "antenna.radiowaves.left.and.right")
+                            Button("重新搜索") { scale.startScan() }
+                        }
                     }
                     Button(capture.measurements.count == 3 ? "退出检查模式" : "结束本次检查", role: .cancel) { scale.endRepeatCheck() }
                 } else {
@@ -24,8 +32,8 @@ struct RepeatabilityView: View {
                         ForEach([profile.primaryMember] + profile.members) { Text($0.name).tag($0.id) }
                     }
                     Button("开始三次测量检查") { scale.startRepeatCheck(member: member) }
-                        .disabled(scale.connectionState != .connected || scale.reviewMeasurement != nil || scale.assistedCapture != nil)
-                    Text("先连接体脂秤。每次必须观察到离秤事件；断线后也需要先离秤再继续。退出后请离秤，再开始日常称重。")
+                        .disabled((scale.connectionState != .connected && scale.connectionState != .measuring) || scale.reviewMeasurement != nil || scale.assistedCapture != nil)
+                    Text("先连接体脂秤。每次测量后先离秤；未自动识别时可手动确认。断线后重新连接，再离秤确认。退出后请离秤，再开始日常称重。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -44,6 +52,12 @@ struct RepeatabilityView: View {
                 }
             }
         }.navigationTitle("三次测量检查")
+            .alert("确认已经离秤？", isPresented: $confirmingStepOff) {
+                Button("取消", role: .cancel) {}
+                Button("已离秤，开始下一次") { scale.confirmRepeatStepOff() }
+            } message: {
+                Text("请确保双脚已离开秤面，再确认并重新上秤。不要在仍站在秤上时确认，以免把同一次测量重复计入。")
+            }
     }
 }
 

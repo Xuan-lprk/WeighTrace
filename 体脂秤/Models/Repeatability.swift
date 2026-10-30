@@ -42,6 +42,14 @@ struct RepeatabilityCapture {
     private(set) var raw: [Double] = []
     private(set) var impedances: [Double] = []
 
+    /// Some scales never notify zero on step-off. Explicit user confirmation is
+    /// an alternative boundary; discard every pending value before rearming.
+    mutating func confirmStepOff() {
+        guard waitingForStepOff, measurements.count < 3 else { return }
+        waitingForStepOff = false
+        weight = 0; stable = false; raw = []; impedances = []
+    }
+
     mutating func receiveWeight(_ value: Double, stable: Bool) {
         if value < 1 {
             waitingForStepOff = false

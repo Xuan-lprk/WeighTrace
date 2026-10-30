@@ -54,6 +54,17 @@ struct HealthWeightSampleSummary: Identifiable {
     let bundleIdentifier: String
 }
 
+/// A HealthKit quantity stays independent: never fabricate a complete BIA record
+/// or join weight/body-fat samples from different times or sources.
+struct HealthTrendSample: Identifiable {
+    let id: UUID
+    let date: Date
+    let metric: HealthBodyMetric
+    let value: Double
+    let sourceName: String
+    let sourceID: String
+}
+
 struct HealthDuplicateWeightGroup: Identifiable {
     let id: UUID
     let samples: [HealthWeightSampleSummary]
@@ -110,6 +121,9 @@ final class HealthKitManager: ObservableObject {
     @Published private(set) var isScanningSources = false
     @Published private(set) var recoveryStatusText: String?
     @Published private(set) var isRecoveringMeasurements = false
+    @Published private(set) var trendSamples: [HealthTrendSample] = []
+    @Published private(set) var isLoadingTrends = false
+    @Published private(set) var trendStatusText = ""
 
     var onMeasurementsRecovered: (([BodyMeasurement]) -> Int)?
 
@@ -191,10 +205,60 @@ final class HealthKitManager: ObservableObject {
             Task { @MainActor in
                 if success {
                     manager.refreshDataSources()
+                    await manager.refreshTrends()
                 } else {
                     manager.sourceStatusText = error?.localizedDescription ?? String(appLocalized: "未获得 Apple 健康读取权限")
                 }
             }
+        }
+    }
+
+    func requestTrendAccess() {
+        guard isAvailable else { return }
+        healthStore.requestAuthorization(toShare: [], read: readableBodyTypes()) { [weak self] success, error in
+            Task { @MainActor in
+                guard let self else { return }
+                if success { await self.refreshTrends() }
+                else { self.trendStatusText = error?.localizedDescription ?? String(appLocalized: "未获得 Apple 健康读取权限") }
+            }
+        }
+    }
+
+    func refreshTrends() async {
+        guard isAvailable, !isLoadingTrends else { return }
+        isLoadingTrends = true
+        defer { isLoadingTrends = false }
+        do {
+            var points: [HealthTrendSample] = []
+            for metric in [HealthBodyMetric.weight, .bodyFat, .bmi] {
+                guard let type = HKQuantityType.quantityType(forIdentifier: metric.typeIdentifier) else { continue }
+                let samples = try await trendQuantitySamples(for: type)
+                for sample in samples {
+                    let unit: HKUnit = metric == .weight ? .gramUnit(with: .kilo) : (metric == .bodyFat ? .percent() : .count())
+                    let value = sample.quantity.doubleValue(for: unit) * (metric == .bodyFat ? 100 : 1)
+                    guard value.isFinite, value > 0 else { continue }
+                    let source = sample.sourceRevision.source
+                    points.append(HealthTrendSample(id: sample.uuid, date: sample.endDate, metric: metric,
+                        value: value, sourceName: source.name, sourceID: source.bundleIdentifier))
+                }
+            }
+            trendSamples = points.sorted { $0.date < $1.date }
+            trendStatusText = points.isEmpty ? String(appLocalized: "没有读到记录。请在“健康”中确认已允许本 App 读取身体测量数据。") : ""
+        } catch {
+            trendStatusText = String(appLocalized: "读取失败：\(error.localizedDescription)")
+        }
+    }
+
+    private func trendQuantitySamples(for type: HKQuantityType) async throws -> [HKQuantitySample] {
+        try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(sampleType: type,
+                predicate: HKQuery.predicateForSamples(withStart: nil, end: .now, options: .strictEndDate),
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: true)]) { _, samples, error in
+                    if let error { continuation.resume(throwing: error) }
+                    else { continuation.resume(returning: samples as? [HKQuantitySample] ?? []) }
+                }
+            healthStore.execute(query)
         }
     }
 

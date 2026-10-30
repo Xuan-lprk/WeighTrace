@@ -17,7 +17,14 @@ struct RepeatabilityView: View {
                     if capture.measurements.count == 3 {
                         Label("检查完成，报告已保存", systemImage: "checkmark.circle")
                     } else {
-                        Text(capture.waitingForStepOff ? String(appLocalized: "请先离秤。如果秤没有自动识别离秤，请点击下方按钮确认。") : String(appLocalized: "请重新上秤，等待稳定体重和两路有效阻抗。"))
+                        LabeledContent("当前体重", value: String(format: "%.2f kg", capture.weight))
+                        LabeledContent("稳定体重", value: capture.stable ? String(appLocalized: "已收到") : String(appLocalized: "等待中"))
+                        LabeledContent("有效阻抗", value: "\(capture.impedances.count) / 2")
+                        if capture.stable && capture.impedances.isEmpty {
+                            Text("尚未收到有效阻抗。请保持赤脚站稳；若持续为 0/2，请查看调试日志中的 D0 初始化和 D6 阻抗包。")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text(capture.waitingForStepOff ? String(appLocalized: "请先离秤。读数比本次下降至少 30 kg，或降至 1 kg 以下，会自动准备下一次；未识别时可手动确认。") : String(appLocalized: "请重新上秤，等待稳定体重和两路有效阻抗。"))
                         if capture.waitingForStepOff {
                             Button("我已离秤，准备下一次") { confirmingStepOff = true }
                         }

@@ -26,6 +26,18 @@ struct TrendsBackupChecks {
         assert(AppLanguage.simplifiedChinese.locale.identifier == "zh-Hans")
         let primary = FamilyMember(id: MeasurementBackup.primaryID, name: "本人", sex: .male,
                                    height: 170, birthDate: Date(timeIntervalSince1970: 946684800), referenceWeight: 60)
+        let command = AFUPacket.profileCommand(member: primary, date: Date(timeIntervalSince1970: 1700000000), timeZone: TimeZone(secondsFromGMT: 0)!)
+        assert(command.map { String(format: "%02x", $0) }.joined() == "ac276553f100000001aa0000170100000300d03f", "D0 must match the CLI encoder byte for byte")
+        // Wrapped protocol fixtures need the opcode at byte 18, as on the wire.
+        let wrappedADC = AFUPacket(data: Data([0xAC,0x29,0x02,0x00,0x02,0x05,0x01,0xD8,0x01,0x80,0x68,0xE2,0xC2,0,0,0,0,0x29,0xD6,0x0E]))!
+        assert(wrappedADC.adcs == [517, 472] && abs(wrappedADC.adcWeight - 58.05) < 0.001)
+        let zeroWeight = AFUPacket(data: Data([0xAC,0x29,0,0x68,0,0,2,0,5,0x40,0,0x64,0,0,0,0,0,0x29,0xD5,0x11]))!
+        assert(zeroWeight.weight == 0 && !zeroWeight.stable, "reported zero D5 packet is not a completed on-scale measurement")
+        let oldRelease = try JSONDecoder().decode(MacRelease.self, from: Data(#"{"tag_name":"V1.6.9","html_url":"https://github.com/Xuan-lprk/WeighTrace/releases/tag/V1.6.9","draft":false,"prerelease":false,"assets":[{"name":"WeighTrace1.6-9.dmg"}]}"#.utf8))
+        assert(oldRelease.packageVersion == MacRelease.Version(number: "1.6", build: 9))
+        assert(!oldRelease.packageVersion!.isNewer(than: .init(number: "1.6.1", build: 10)), "old build tag must not masquerade as a newer marketing version")
+        assert(MacRelease.Version(number: "1.6.2", build: 12).isNewer(than: .init(number: "1.6.2", build: 11)))
+        print("PASS: CLI D0 initialization, ADC/zero-weight packets and legacy release naming")
         // The original profile schema had these same fields, but no completion flag.
         demoDefaults.set(try JSONEncoder().encode(primary), forKey: "afu.primary.profile")
         assert(UserProfile(defaults: demoDefaults).isComplete, "valid existing profiles skip onboarding")
@@ -157,6 +169,32 @@ struct TrendsBackupChecks {
         reconnect.receiveWeight(60, stable: true)
         assert(!reconnect.captureIfReady(), "manual reconnect boundary clears stale ADCs")
         var shifting = RepeatabilityCapture(member: primary)
+        var automatic = RepeatabilityCapture(member: primary)
+        automatic.receiveWeight(50, stable: true)
+        automatic.receiveWeight(20.01, stable: false)
+        assert(automatic.waitingForStepOff, "a drop below 30 kg does not rearm")
+        automatic.receiveWeight(.nan, stable: false)
+        assert(automatic.waitingForStepOff)
+        automatic.receiveWeight(20, stable: false)
+        assert(!automatic.waitingForStepOff && automatic.weight == 0, "exact 30 kg drop rearms before the first capture")
+        for index in 0..<3 {
+            automatic.receiveWeight(20, stable: true)
+            automatic.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 20)
+            assert(!automatic.captureIfReady(), "low step-off readings cannot become the next measurement")
+            automatic.receiveWeight(50, stable: true)
+            assert(!automatic.captureIfReady(), "fresh ADC is required after rearming")
+            automatic.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 50)
+            assert(automatic.captureIfReady())
+            automatic.receiveWeight(49, stable: false)
+            assert(automatic.waitingForStepOff, "ordinary fluctuations do not rearm")
+            if index < 2 {
+                automatic.receiveWeight(19.5, stable: false)
+                assert(!automatic.waitingForStepOff)
+            }
+        }
+        automatic.receiveWeight(0, stable: true)
+        assert(automatic.waitingForStepOff && automatic.measurements.count == 3, "completed reports stay completed")
+        print("PASS: automatic 30 kg step-off, threshold boundary, low-reading and stale ADC rejection")
         shifting.receiveWeight(0, stable: true)
         shifting.receiveWeight(60, stable: false)
         shifting.receiveADCs(raw: [500, 510], impedances: [500, 510], packetWeight: 60)

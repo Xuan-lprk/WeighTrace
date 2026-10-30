@@ -13,6 +13,7 @@ xcrun --sdk macosx swiftc -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
     体脂秤/Services/UserProfile.swift \
     体脂秤/Services/BodyAlgorithm.swift 体脂秤/Models/MeasurementBackup.swift \
     体脂秤/Models/Repeatability.swift \
+    体脂秤/Models/MacRelease.swift 体脂秤/Services/AFUPacket.swift \
     体脂秤/Models/AssistedWeighing.swift \
     体脂秤/Models/MeasurementTrends.swift tests/TrendsBackupChecks.swift \
     -o "$CHECK_DIR/checks"

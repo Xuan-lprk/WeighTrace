@@ -84,7 +84,7 @@ import Foundation
             rawADCs: rawADCs,
             normalizedImpedances: normalizedImpedances,
             profileSnapshot: MeasurementProfileSnapshot(member: member),
-            algorithmVersion: version
+            algorithmVersion: validResistance == nil ? "deurenberg_1991_bmi_fallback_v1" : version
         )
     }
 

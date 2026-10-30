@@ -205,6 +205,10 @@ struct MeasurementDetailView: View {
             }
             
             // Grid of metrics (compact)
+            if !(100...1500).contains(measurement.impedance) {
+                Text("这条记录没有有效阻抗。体脂等指标可能来自 BMI 回退估算，不能视为成功的阻抗测量，也不能补回当时缺失的 ADC。")
+                    .font(.callout).foregroundStyle(.orange)
+            }
             VStack(alignment: .leading, spacing: 8) {
                 Text("身体指标详情").font(.headline).foregroundStyle(.secondary).padding(.leading, 4)
                 

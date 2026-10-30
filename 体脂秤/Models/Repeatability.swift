@@ -34,6 +34,7 @@ struct Spread {
 /// Requires an observed step-off before each capture; accepts stable weight and dual ADC
 /// only within that cycle. A disconnect disarms the current cycle, keeping completed captures.
 struct RepeatabilityCapture {
+    static let stepOffDropKilograms = 30.0
     let member: FamilyMember
     private(set) var measurements: [BodyMeasurement] = []
     private(set) var waitingForStepOff = true
@@ -41,6 +42,8 @@ struct RepeatabilityCapture {
     private(set) var stable = false
     private(set) var raw: [Double] = []
     private(set) var impedances: [Double] = []
+    private var stepOffReferenceWeight: Double?
+    private var stepOffCeiling: Double?
 
     /// Some scales never notify zero on step-off. Explicit user confirmation is
     /// an alternative boundary; discard every pending value before rearming.
@@ -51,10 +54,28 @@ struct RepeatabilityCapture {
     }
 
     mutating func receiveWeight(_ value: Double, stable: Bool) {
-        if value < 1 {
+        guard value.isFinite, value >= 0, measurements.count < 3 else { return }
+        let droppedOff = waitingForStepOff && stepOffReferenceWeight.map {
+            $0 - value >= Self.stepOffDropKilograms - 1e-9
+        } == true
+        if value < 1 || droppedOff {
+            if let reference = stepOffReferenceWeight {
+                stepOffCeiling = max(1, reference - Self.stepOffDropKilograms)
+            }
             waitingForStepOff = false
             weight = 0; self.stable = false; raw = []; impedances = []
+        } else if waitingForStepOff {
+            // Before the first capture, observe a real on-scale reading rather
+            // than guessing a person's weight from profile defaults.
+            if measurements.isEmpty {
+                stepOffReferenceWeight = max(stepOffReferenceWeight ?? 0, value)
+            }
         } else if !waitingForStepOff {
+            // Repeated low readings during step-off are not a new weighing.
+            if let ceiling = stepOffCeiling, value <= ceiling + 1e-9 {
+                weight = 0; self.stable = false; raw = []; impedances = []
+                return
+            }
             if weight > 3 && abs(weight - value) > 0.2 {
                 raw = []; impedances = []
             }
@@ -77,12 +98,15 @@ struct RepeatabilityCapture {
         let measurement = BodyAlgorithm.measure(weight: weight, impedance: impedances[0], member: member,
             adcIndex: 0, rawADCs: raw, normalizedImpedances: impedances)
         measurements.append(measurement)
+        stepOffReferenceWeight = weight
         waitingForStepOff = true
         return true
     }
 
     mutating func disconnect() {
         waitingForStepOff = true; stable = false; weight = 0; raw = []; impedances = []
+        stepOffReferenceWeight = measurements.last?.weight
+        stepOffCeiling = nil
     }
 }
 

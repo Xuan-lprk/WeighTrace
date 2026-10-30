@@ -1,6 +1,14 @@
 import SwiftUI
 import Charts
 
+private struct ADCDifferencePoint: Identifiable {
+    let id: String
+    let date: Date
+    let value: Double
+    let source: String
+    let segment: String
+}
+
 struct ADCDifferenceView: View {
     let comparisons: [ADCComparison]
     @State private var includeRejected = false
@@ -21,9 +29,20 @@ struct ADCDifferenceView: View {
         }
         return result
     }
-    var body: some View {
+    private func chartPoints(errors: Bool) -> [ADCDifferencePoint] {
         let groups = segments
-        return ScrollView {
+        return visible.flatMap { item -> [ADCDifferencePoint] in
+            let sources = errors ? ["ADC 1", "ADC 2"] : [String(appLocalized: "阿福参考"), "ADC 1", "ADC 2"]
+            let values = errors ? [item.adc1Error, item.adc2Error] :
+                [item.reference.bodyFat, item.adc1Measurement.bodyFat, item.adc2Measurement.bodyFat]
+            return sources.enumerated().map { index, source in
+                ADCDifferencePoint(id: "\(item.id)-\(index)", date: item.measurement.date,
+                    value: values[index], source: source, segment: "\(source)-\(groups[item.id] ?? 0)")
+            }
+        }
+    }
+    var body: some View {
+        ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Toggle("同时显示不合格对照", isOn: $includeRejected)
                 Text("图表使用当前本地公式及测量时资料快照分别重算 ADC 1/2，不改写原始历史。阿福只是厂商参考；更接近不代表医学上更准确。")
@@ -33,13 +52,9 @@ struct ADCDifferenceView: View {
                 } else {
                     Text("体脂时间线").font(.headline)
                     Chart {
-                        ForEach(visible) { item in
-                            ForEach(0..<3) { index in
-                                let name = index == 0 ? String(appLocalized: "阿福参考") : "ADC \(index)"
-                                let value = index == 0 ? item.reference.bodyFat : (index == 1 ? item.adc1Measurement.bodyFat : item.adc2Measurement.bodyFat)
-                                LineMark(x: .value("日期", item.measurement.date), y: .value("体脂率", value), series: .value("段", "\(name)-\(groups[item.id] ?? 0)"))
-                                    .foregroundStyle(by: .value("来源", name)).symbol(by: .value("来源", name))
-                            }
+                        ForEach(chartPoints(errors: false)) { point in
+                            LineMark(x: .value("日期", point.date), y: .value("体脂率", point.value), series: .value("段", point.segment))
+                                .foregroundStyle(by: .value("来源", point.source)).symbol(by: .value("来源", point.source))
                         }
                         if let selected { RuleMark(x: .value("日期", selected.measurement.date)).foregroundStyle(.secondary) }
                     }.chartForegroundStyleScale(domain: [String(appLocalized: "阿福参考"), "ADC 1", "ADC 2"], range: [Color.gray, Color.teal, Color.orange])
@@ -48,11 +63,9 @@ struct ADCDifferenceView: View {
                     Text("与阿福差值（百分点）").font(.headline)
                     Chart {
                         RuleMark(y: .value("零差值", 0)).foregroundStyle(.secondary)
-                        ForEach(visible) { item in
-                            ForEach(0..<2) { index in
-                                LineMark(x: .value("日期", item.measurement.date), y: .value("差值", index == 0 ? item.adc1Error : item.adc2Error), series: .value("段", "\(index)-\(groups[item.id] ?? 0)"))
-                                    .foregroundStyle(by: .value("来源", "ADC \(index + 1)")).symbol(by: .value("来源", "ADC \(index + 1)"))
-                            }
+                        ForEach(chartPoints(errors: true)) { point in
+                            LineMark(x: .value("日期", point.date), y: .value("差值", point.value), series: .value("段", point.segment))
+                                .foregroundStyle(by: .value("来源", point.source)).symbol(by: .value("来源", point.source))
                         }
                         if let selected { RuleMark(x: .value("日期", selected.measurement.date)).foregroundStyle(.secondary) }
                     }.chartForegroundStyleScale(domain: ["ADC 1", "ADC 2"], range: [Color.teal, Color.orange])

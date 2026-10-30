@@ -40,7 +40,7 @@ SOURCE_STATE=clean
 if [[ -n "$(git -C "$PROJECT_ROOT" status --porcelain --untracked-files=normal)" ]]; then
     SOURCE_STATE='contains uncommitted changes; the commit link alone does not reproduce this build'
 fi
-printf 'WeighTrace %s (%s)\nSource commit: %s\nBuild source state: %s\nSource: https://github.com/Xuan-lprk/smart-body-scale/tree/%s\nLicense: GNU GPL v3.0 (see LICENSE)\n' \
+printf 'WeighTrace %s (%s)\nSource commit: %s\nBuild source state: %s\nSource: https://github.com/Xuan-lprk/WeighTrace/tree/%s\nLicense: GNU GPL v3.0 (see LICENSE)\n' \
     "$VERSION" "$BUILD" "$REVISION" "$SOURCE_STATE" "$REVISION" > "$BUILD_ROOT/image/SOURCE.txt"
 hdiutil create -quiet -volname 'WeighTrace' -srcfolder "$BUILD_ROOT/image" \
     -format UDZO "$OUTPUT_DIR/$NAME.dmg"

@@ -4,7 +4,7 @@
 
 ## 先下载安装包
 
-打开本项目的 [GitHub Releases 发布页](https://github.com/Xuan-lprk/smart-body-scale/releases)，选择需要的版本，在 **Assets** 中下载 `AFU-Scale-Mac-…-test.dmg`。`Source code (zip)` 和 `Source code (tar.gz)` 是源码，不是安装包。如果没有 DMG，该版本暂不能按本文直接安装。
+打开本项目的 [GitHub Releases 发布页](https://github.com/Xuan-lprk/WeighTrace/releases)，选择需要的版本，在 **Assets** 中下载 `AFU-Scale-Mac-…-test.dmg`。`Source code (zip)` 和 `Source code (tar.gz)` 是源码，不是安装包。如果没有 DMG，该版本暂不能按本文直接安装。
 
 请同时阅读该版本的发布说明：仓库首页可能包含尚未打包的新功能。当前仅验证 `AFU-WL-TZ-A1 / category=2 / subtype=7`，不保证其他型号兼容。
 
@@ -27,8 +27,10 @@
 
 “自动检查更新”仅获取 GitHub Releases 的公开版本信息，不发送体重、个人资料或蓝牙日志。发现新版后可以打开下载页面，下载并覆盖安装。当前测试版尚不支持自动替换 App 和自动重启。
 
+在“我的 → 软件更新”查看当前版本、手动检查或开启自动检查。仅识别附带 Mac DMG 的正式 Release；预发布和草稿不提示更新。支持 `AFU-Scale-Mac-1.6.2-11-test.dmg` 或 `WeighTrace1.6.2-11.dmg` 这样的文件名，以包文件的版本及构建号比较，不依赖早期混用的标签格式。新发布仍建议统一使用 `v1.6.2` 这样的版本标签。未上传到 Releases 的本地测试包不会通过更新检查分发。失败时可复制页面中的具体错误信息，或直接打开发布页检查。
+
 ## 遇到问题
 
 搜不到秤时，检查蓝牙权限、秤是否亮屏，并确认手机阿福、其他电脑或 CLI 已断开。Mac 版需要 App 在前台连接，不支持 Apple 健康。
 
-仍有问题可到 [Issues](https://github.com/Xuan-lprk/smart-body-scale/issues)反馈：提供 App 版本、macOS 版本、芯片类型、秤型号、复现步骤及准确报错。公开前请遮住姓名、生日、健康数值和蓝牙设备标识，不要直接上传完整 JSON 备份。
+仍有问题可到 [Issues](https://github.com/Xuan-lprk/WeighTrace/issues)反馈：提供 App 版本、macOS 版本、芯片类型、秤型号、复现步骤及准确报错。公开前请遮住姓名、生日、健康数值和蓝牙设备标识，不要直接上传完整 JSON 备份。

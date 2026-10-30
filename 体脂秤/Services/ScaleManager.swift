@@ -48,6 +48,8 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     private let serviceUUID = CBUUID(string: "0000FFB0-0000-1000-8000-00805F9B34FB")
     private var central: CBCentralManager!
     private var activePeripheral: CBPeripheral?
+    private var writeCharacteristic: CBCharacteristic?
+    private var pendingProfileCommand: Data?
     weak var profile: UserProfile?
     weak var healthKit: HealthKitManager?
     weak var comparisonStore: ComparisonStore?
@@ -107,6 +109,7 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
         repeatCapture = RepeatabilityCapture(member: member)
         reviewMeasurement = nil
         currentMeasurement = nil
+        sendProfileToScale(member: member)
     }
     func endRepeatCheck() {
         repeatCapture = nil
@@ -117,6 +120,28 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     }
     func confirmRepeatStepOff() {
         repeatCapture?.confirmStepOff()
+        if let member = repeatCapture?.member { sendProfileToScale(member: member) }
+    }
+
+    private func sendProfileToScale(member: FamilyMember) {
+        guard !isDemo, let peripheral = activePeripheral, peripheral.state == .connected,
+              let characteristic = writeCharacteristic else { return }
+        let data = AFUPacket.profileCommand(member: member)
+        if characteristic.properties.contains(.writeWithoutResponse) {
+            pendingProfileCommand = data
+            flushProfileCommand(peripheral)
+        } else if characteristic.properties.contains(.write) {
+            peripheral.writeValue(data, for: characteristic, type: .withResponse)
+            log("[BLE] Sent D0 profile initialization; impedance measurement enabled")
+        }
+    }
+
+    private func flushProfileCommand(_ peripheral: CBPeripheral) {
+        guard peripheral.canSendWriteWithoutResponse, let data = pendingProfileCommand,
+              let characteristic = writeCharacteristic else { return }
+        pendingProfileCommand = nil
+        peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
+        log("[BLE] Sent D0 profile initialization; impedance measurement enabled")
     }
     func removeRepeatReport(id: UUID) {
         repeatReports.removeAll { $0.id == id }; saveRepeatReports()
@@ -228,6 +253,10 @@ enum ConnectionState: Equatable { case bluetoothOff, idle, scanning, connecting,
     private func finishMeasurement() {
         guard repeatCapture == nil, assistedCapture == nil else { return }
         guard liveWeight > 0, let profile, profile.isComplete else { return }
+        guard (100...1500).contains(impedance) else {
+            log("[BLE] Not saved: waiting for valid impedance")
+            return
+        }
         guard !hasSavedMeasurement else { return }
         hasSavedMeasurement = true
         let isNewMember = profile.shouldSuggestNewMember(for: liveWeight, history: history)
@@ -399,6 +428,8 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         connectionState = .idle
         activePeripheral = nil
         liveWeight = 0.0
+        writeCharacteristic = nil
+        pendingProfileCommand = nil
         impedance = 0.0
         selectedADCIndex = nil
         rawADCs = []
@@ -439,12 +470,29 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
             log("[BLE] No characteristics discovered for service: \(service.uuid)")
             return
         }
+        writeCharacteristic = characteristics.first { $0.uuid == CBUUID(string: "FFB1") }
+        if writeCharacteristic == nil { log("[BLE] Missing FFB1: cannot initialize impedance measurement") }
         log("[BLE] Discovered \(characteristics.count) characteristics for service \(service.uuid): \(characteristics.map { "\($0.uuid.uuidString) (prop: \($0.properties.rawValue))" })")
         
         characteristics.filter { $0.properties.contains(.notify) || $0.properties.contains(.indicate) }.forEach { characteristic in
             log("[BLE] Subscribing to notifications for characteristic: \(characteristic.uuid)")
             peripheral.setNotifyValue(true, for: characteristic)
         }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+        guard characteristic.uuid == CBUUID(string: "FFB2") else { return }
+        guard error == nil, characteristic.isNotifying else {
+            log("[BLE] FFB2 notification setup failed: \(error?.localizedDescription ?? "not notifying")")
+            return
+        }
+        if let profile, profile.isComplete { sendProfileToScale(member: repeatCapture?.member ?? profile.primaryMember) }
+    }
+
+    func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) { flushProfileCommand(peripheral) }
+
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        if let error { log("[BLE] Profile initialization write failed: \(error.localizedDescription)") }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -556,6 +604,10 @@ extension ScaleManager: @preconcurrency CBCentralManagerDelegate, @preconcurrenc
         case .impedance:
             let packetWeight = packet.adcWeight > 0 ? packet.adcWeight : liveWeight
             let normalized = AFUPacket.normalizeImpedances(packet.adcs, weight: packetWeight)
+            guard normalized.contains(where: { (100...1500).contains($0) }) else {
+                log("[BLE] Ignored invalid impedance packet: raw ADCs=\(packet.adcs); waiting for valid impedance")
+                return
+            }
             repeatCapture?.receiveADCs(raw: packet.adcs, impedances: normalized, packetWeight: packet.adcWeight)
             collectRepeatCheck()
             rawADCs = packet.adcs

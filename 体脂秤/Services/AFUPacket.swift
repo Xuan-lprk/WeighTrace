@@ -3,6 +3,23 @@ import Foundation
 struct AFUPacket {
     enum Kind { case weight, impedance, history, settings }
     let type: Kind; let raw: Data
+
+    /// Same D0 initialization as CLI encode_time_and_user_info_27. Data goes
+    /// directly to the paired scale; no account or network service is involved.
+    static func profileCommand(member: FamilyMember, date: Date = .now, timeZone: TimeZone = .current) -> Data {
+        let timestamp = UInt32(clamping: Int64(date.timeIntervalSince1970))
+        let age = Calendar.current.dateComponents([.year], from: member.birthDate, to: date).year ?? 0
+        let quarters = timeZone.secondsFromGMT(for: date) / 900
+        var bytes: [UInt8] = [0xAC, 0x27,
+            UInt8((timestamp >> 24) & 255), UInt8((timestamp >> 16) & 255),
+            UInt8((timestamp >> 8) & 255), UInt8(timestamp & 255),
+            UInt8(truncatingIfNeeded: quarters), 0, 1,
+            UInt8(clamping: Int(member.height)), 0, 0,
+            UInt8(clamping: age), member.sex == .male ? 1 : 2,
+            0, 0, 0x03, 0, 0xD0]
+        bytes.append(UInt8(truncatingIfNeeded: bytes[2..<19].reduce(0) { $0 + Int($1) }))
+        return Data(bytes)
+    }
     
     init?(data: Data) {
         guard data.count >= 20, data.first == 0xAC else {
@@ -75,7 +92,7 @@ struct AFUPacket {
     }
 
     var adcWeight: Double {
-        guard raw.first == 0xAC, raw.count >= 13, raw[18] == 0xD6 else { return 0 }
+        guard raw.first == 0xAC, raw.count >= 20, raw[18] == 0xD6 else { return 0 }
         let encoded = UInt32(raw[9]) << 24
             | UInt32(raw[10]) << 16
             | UInt32(raw[11]) << 8

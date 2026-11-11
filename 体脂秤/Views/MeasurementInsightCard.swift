@@ -126,10 +126,6 @@ struct InsightFact<Content: View>: View {
 
 extension View {
     func insightSurface() -> some View {
-        self.padding(20).frame(maxWidth: .infinity, alignment: .leading)
-            .background(LinearGradient(colors: [.teal.opacity(0.12), .cyan.opacity(0.04)],
-                                       startPoint: .topLeading, endPoint: .bottomTrailing),
-                        in: RoundedRectangle(cornerRadius: 24))
-            .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(.teal.opacity(0.16), lineWidth: 1))
+        self.appCard(padding: 20)
     }
 }

@@ -1,7 +1,9 @@
 import SwiftUI
 import Foundation
 
-struct ProfileView: View {
+struct ProfileSettingsView: View {
+    enum Category { case personal, device, algorithm, health, family, about, debug, display }
+    let category: Category
     @EnvironmentObject private var profile: UserProfile
     @EnvironmentObject private var scale: ScaleManager
     @EnvironmentObject private var healthKit: HealthKitManager
@@ -15,16 +17,30 @@ struct ProfileView: View {
     @State private var showingAddMember = false
     @State private var showingDemo = false
     var body: some View {
-        NavigationStack { Form {
-            Section {
-                NavigationLink("备份与导出") { BackupView() }
-            }
+        Form {
+            if category == .device {
             Section("我的设备") {
-                HStack { Image(systemName: "scalemass").foregroundStyle(.teal); VStack(alignment: .leading) { Text(scale.deviceName ?? String(appLocalized: "AFU Welland 体脂秤")); Text(scale.connectionState.title).font(.caption).foregroundStyle(.secondary) }; Spacer(); Circle().fill(scale.connectionState.color).frame(width: 9, height: 9) }
+                HStack {
+                    Image(systemName: "scalemass")
+                        .font(.title3)
+                        .foregroundStyle(AppTheme.accent)
+                        .frame(width: 38, height: 38)
+                        .background(AppTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(scale.deviceName ?? String(appLocalized: "AFU Welland 体脂秤"))
+                        Text(scale.connectionState.title).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Circle().fill(scale.connectionState.color).frame(width: 9, height: 9)
+                }
                 Button { scale.startScan() } label: { Label("重新连接", systemImage: "arrow.clockwise") }
                 Button(role: .destructive) { scale.forgetPairedScale() } label: { Label("更换体脂秤", systemImage: "arrow.triangle.2.circlepath") }
             }
+            }
+            if category == .personal {
             Section("个人资料") { Picker("性别", selection: $profile.sex) { Text("女").tag(Sex.female); Text("男").tag(Sex.male) }; DatePicker("出生日期", selection: $profile.birthDate, displayedComponents: .date); Stepper("身高 \(Int(profile.height)) cm", value: $profile.height, in: 100...230) }
+            }
+            if category == .algorithm {
             Section {
                 Picker("用于体脂计算", selection: $selectedADCIndex) {
                     Text("ADC 1").tag(ImpedanceADCChoice.first.rawValue)
@@ -36,8 +52,10 @@ struct ProfileView: View {
             } footer: {
                 Text("秤每次会发送两个 ADC，其物理含义尚未确认。所选 ADC 会影响阻抗、体脂及由体脂推算的身体指标，但不影响体重、BMI 和骨量。若希望结果更接近蚂蚁阿福，可选择对照差值较小的；更接近官方结果不代表医学上更准确。选择仅影响之后的新测量，不会改写历史记录。")
             }
+            }
 #if targetEnvironment(macCatalyst)
-            if !scale.isDemo { MacUpdateSection() }
+            if category == .device && !scale.isDemo { MacUpdateSection() }
+            if category == .about {
             Section {
                 Label("测量历史保存在这台 Mac", systemImage: "internaldrive")
                 LabeledContent("已保存记录", value: "\(scale.history.count)")
@@ -46,7 +64,9 @@ struct ProfileView: View {
             } footer: {
                 Text("Mac 版不访问 Apple 健康。个人资料、双 ADC 和测量历史保存在当前 Mac；可通过 JSON 备份迁移，删除数据容器前请先导出备份。")
             }
+            }
 #else
+            if category == .health {
             Section {
                 Toggle("自动写入 Apple 健康", isOn: $healthSyncEnabled)
                     .onChange(of: healthSyncEnabled) { enabled in
@@ -126,7 +146,9 @@ struct ProfileView: View {
             } footer: {
                 Text("识别 Apple 健康中的体重和体脂数据来自哪些 App，为后续去重、跨秤对比和异常提示打基础。")
             }
+            }
 #endif
+            if category == .family {
             Section {
                 ForEach(profile.members) { member in
                     HStack { Image(systemName: "person.crop.circle").foregroundStyle(.teal); Text(member.name); Spacer(); Text(member.sex == .female ? String(appLocalized: "女") : String(appLocalized: "男")).font(.caption).foregroundStyle(.secondary) }
@@ -138,6 +160,8 @@ struct ProfileView: View {
             } footer: {
                 Text("测量完成后会按成员近期体重和参考体重自动归属记录。")
             }
+            }
+            if category == .about {
             Section("说明") {
 #if targetEnvironment(macCatalyst)
                 Text("体脂率和其他身体成分是本地估算值，不替代医疗诊断。")
@@ -145,6 +169,8 @@ struct ProfileView: View {
                 Text("本地历史保存在 App 容器内，卸载 App 会清除；开启 Apple 健康同步后，新测量可从健康样本中的本 App 档案恢复。体脂率为健康参考数据，不替代医疗诊断。")
 #endif
             }
+            }
+            if category == .debug {
             Section("调试日志") {
                 Button("清空日志", role: .destructive) { scale.clearDebugLogs() }
                 if scale.debugLogs.isEmpty {
@@ -157,6 +183,8 @@ struct ProfileView: View {
                     }
                 }
             }
+            }
+            if category == .display {
             Section {
                 Picker("语言", selection: $language) {
                     ForEach(AppLanguage.allCases) { language in
@@ -174,9 +202,10 @@ struct ProfileView: View {
             } footer: {
                 Text("演示使用独立的虚构资料和记录，不连接体脂秤、不访问 Apple 健康，也不会改动真实记录。")
             }
+            }
         }
             .disabled(scale.isDemo)
-            .navigationTitle("我的资料")
+            .navigationTitle(categoryTitle)
             .fullScreenCover(isPresented: $showingDemo, onDismiss: { scale.resumeAfterDemo() }) {
                 ScreenshotDemoView()
             }
@@ -186,6 +215,18 @@ struct ProfileView: View {
                 if !scale.isDemo { healthKit.refreshStatus() }
 #endif
             }
+    }
+
+    private var categoryTitle: LocalizedStringKey {
+        switch category {
+        case .personal: "个人资料"
+        case .device: "我的设备"
+        case .algorithm: "阻抗选择"
+        case .health: "Apple 健康"
+        case .family: "家庭成员"
+        case .about: "说明"
+        case .debug: "调试日志"
+        case .display: "显示与演示"
         }
     }
 

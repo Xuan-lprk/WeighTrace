@@ -12,6 +12,7 @@ struct TrendsView: View {
     @State private var useDailyMedian = true
     @State private var selectedDate: Date?
     @State private var reviewDate = Date()
+    @State private var showHealth = false
 
     private var memberOptions: [(key: String, name: String)] {
         var result = [(profile.primaryMember.id.uuidString, String(appLocalized: "本人"))]
@@ -79,16 +80,10 @@ struct TrendsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    AppPageHeader(title: "把变化，看得更清楚", subtitle: "先看长期走势，再看单次起伏。")
+                    VStack(alignment: .leading, spacing: 16) {
                     Picker("成员", selection: $memberKey) {
                         ForEach(memberOptions, id: \.key) { option in Text(option.name).tag(option.key) }
-                    }
-                    WeeklyReviewCard(
-                        week: MeasurementInsights.Week(history: scale.history, memberID: UUID(uuidString: memberKey), now: reviewDate),
-                        memberName: memberOptions.first { $0.key == memberKey }?.name ?? String(appLocalized: "未归属")
-                    )
-                    if memberKey == "unknown" {
-                        Text("请先确认记录归属，再进行个人趋势比较。")
-                            .font(.caption).foregroundStyle(.secondary)
                     }
                     Picker("时间范围", selection: $days) {
                         Text("30 天").tag(30); Text("90 天").tag(90); Text("全部").tag(0)
@@ -96,14 +91,21 @@ struct TrendsView: View {
                     Picker("指标", selection: $metric) {
                         ForEach(TrendMetric.allCases) { Text($0.title).tag($0) }
                     }.pickerStyle(.segmented)
+                    }.appCard()
                     if healthKit.isAvailable && memberKey == MeasurementBackup.primaryID.uuidString {
-                        healthTrends
+                        Picker("数据来源", selection: $showHealth) {
+                            Text("本地测量").tag(false)
+                            Text("Apple 健康").tag(true)
+                        }.pickerStyle(.segmented)
                     }
-                    Text("本地测量").font(.headline)
+                    if showHealth && healthKit.isAvailable && memberKey == MeasurementBackup.primaryID.uuidString {
+                        healthTrends
+                    } else {
                     if records.isEmpty {
                         EmptyStateView(title: "这个范围内还没有记录", icon: "chart.xyaxis.line", message: "换个时间范围，或先完成一次测量。")
                     } else {
                         summary
+                        chart.padding(.vertical, 10).appCard()
                         NavigationLink { MeasurementPlaybackView(records: records, metric: metric) } label: {
                             HStack {
                                 Image(systemName: "play.circle.fill").font(.title)
@@ -116,7 +118,6 @@ struct TrendsView: View {
                             }.foregroundStyle(.teal).padding()
                                 .background(.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 20))
                         }
-                        chart
                         if metric == .weight {
                             Toggle("显示每日中位数", isOn: $useDailyMedian)
                             Text("圆点为原始测量。实线为每日中位数，虚线为最近 7 个日历日内有测量日期的日中位数平均；缺测日期不补值。趋势不会修改原始记录。")
@@ -152,17 +153,26 @@ struct TrendsView: View {
                         }
                         NavigationLink("查看完整历史") { HistoryView() }
                     }
-                }.padding().frame(maxWidth: 1000)
-                    .frame(maxWidth: .infinity)
+                    WeeklyReviewCard(
+                        week: MeasurementInsights.Week(history: scale.history, memberID: UUID(uuidString: memberKey), now: reviewDate),
+                        memberName: memberOptions.first { $0.key == memberKey }?.name ?? String(appLocalized: "未归属")
+                    )
+                    if memberKey == "unknown" {
+                        Text("请先确认记录归属，再进行个人趋势比较。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    }
+                }.padding(24).appContentWidth(1100)
             }
-            .navigationTitle("测量趋势")
+            .appScreenBackground()
+            .navigationBarTitleDisplayMode(.inline)
             .task { reviewDate = .now; await healthKit.refreshTrends() }
             .refreshable { reviewDate = .now; await healthKit.refreshTrends() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { reviewDate = .now; Task { await healthKit.refreshTrends() } }
             }
             .onChange(of: scale.history) { _, _ in reviewDate = .now }
-            .onChange(of: memberKey) { _, _ in selectedDate = nil }
+            .onChange(of: memberKey) { _, _ in selectedDate = nil; showHealth = false }
             .onChange(of: days) { _, _ in selectedDate = nil }
             .onChange(of: metric) { _, _ in selectedDate = nil }
         }
@@ -196,7 +206,7 @@ struct TrendsView: View {
             }
             Text("仅展示本人的健康数据，按来源分别连线；不与本地测量合计，不修改或重新写入 Apple 健康。体脂率使用来源 App 的结果。")
                 .font(.caption).foregroundStyle(.secondary)
-        }.padding().background(.pink.opacity(0.06), in: RoundedRectangle(cornerRadius: 18))
+        }.appCard()
     }
 
     private var summary: some View {
@@ -213,7 +223,7 @@ struct TrendsView: View {
                     Text("首末日中位数差").font(.caption).foregroundStyle(.secondary)
                 }
             }
-        }.padding().background(.teal.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
+        }.appHeroCard(padding: 18)
     }
 
     private var chart: some View {

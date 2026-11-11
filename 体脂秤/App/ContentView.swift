@@ -14,27 +14,27 @@ struct ContentView: View {
     @State private var suggestedWeight: Double?
 
     var body: some View {
-        TabView(selection: $tab) {
-            Group {
-                if hasPairedScale || scale.isDemo { DashboardView() } else { PairingView() }
-            }.tabItem { Label("测量", systemImage: "waveform.path.ecg") }.tag(0)
-            TrendsView().tabItem { Label("趋势", systemImage: "chart.xyaxis.line") }.tag(3)
-            HistoryView().tabItem { Label("历史", systemImage: "chart.line.uptrend.xyaxis") }.tag(1)
-            ProfileView().tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(2)
+        GeometryReader { geometry in
+            if geometry.size.width >= 900 {
+                HStack(spacing: 0) {
+                    sidebar.frame(width: 224)
+                    Divider()
+                    selectedScreen.frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else {
+                compactNavigation
+            }
         }
-        .tint(.teal)
+        .tint(AppTheme.accent)
         .onAppear {
             scale.profile = profile
             scale.comparisonStore = comparisonStore
 #if !targetEnvironment(macCatalyst)
             if !scale.isDemo {
                 scale.healthKit = healthKit
-                healthKit.onMeasurementsRecovered = { measurements in
-                    scale.mergeRestoredHistory(measurements)
-                }
+                healthKit.onMeasurementsRecovered = { measurements in scale.mergeRestoredHistory(measurements) }
             }
 #else
-            // macOS 没有 Apple 健康数据库；Catalyst 版只保留蓝牙测量与本地历史。
             scale.healthKit = nil
 #endif
         }
@@ -65,9 +65,60 @@ struct ContentView: View {
                 hasPromptedInitial = true
             }
         }
-        .sheet(item: $scale.reviewMeasurement) { measurement in
-            MeasurementReviewView(measurement: measurement)
+        .sheet(item: $scale.reviewMeasurement) { measurement in MeasurementReviewView(measurement: measurement) }
+    }
+
+    private var compactNavigation: some View {
+        TabView(selection: $tab) {
+            Group {
+                if hasPairedScale || scale.isDemo { DashboardView() } else { PairingView() }
+            }.tabItem { Label("测量", systemImage: "scalemass") }.tag(0)
+            TrendsView().tabItem { Label("趋势", systemImage: "chart.line.uptrend.xyaxis") }.tag(1)
+            HistoryView().tabItem { Label("历史", systemImage: "clock.arrow.circlepath") }.tag(2)
+            ProfileView().tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(3)
         }
+    }
+
+    @ViewBuilder private var selectedScreen: some View {
+        switch tab {
+        case 1: TrendsView()
+        case 2: HistoryView()
+        case 3: ProfileView()
+        default:
+            if hasPairedScale || scale.isDemo { DashboardView() } else { PairingView() }
+        }
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: "scalemass.fill").font(.largeTitle).foregroundStyle(AppTheme.accent)
+                Text("WeighTrace").font(.title2.bold())
+                Text("每一次变化，都有迹可循").font(.caption).foregroundStyle(.secondary)
+            }.padding(.top, 24)
+            VStack(spacing: 8) {
+                sidebarButton(0, title: "测量", icon: "scalemass")
+                sidebarButton(1, title: "趋势", icon: "chart.xyaxis.line")
+                sidebarButton(2, title: "历史", icon: "clock.arrow.circlepath")
+                sidebarButton(3, title: "我的", icon: "slider.horizontal.3")
+            }
+            Spacer()
+            VStack(alignment: .leading, spacing: 8) {
+                Label(scale.connectionState.title, systemImage: scale.connectionState.icon)
+                    .foregroundStyle(scale.connectionState.color)
+                Text("本地优先 · 由你掌控").foregroundStyle(.secondary)
+            }.font(.caption).padding(.bottom, 20)
+        }.padding(.horizontal, 20).appScreenBackground()
+    }
+
+    private func sidebarButton(_ index: Int, title: LocalizedStringKey, icon: String) -> some View {
+        Button { tab = index } label: {
+            Label(title, systemImage: icon).font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+                .foregroundStyle(tab == index ? AppTheme.accent : .primary)
+                .background(tab == index ? AppTheme.accent.opacity(0.12) : .clear,
+                            in: RoundedRectangle(cornerRadius: 14))
+        }.buttonStyle(.plain).accessibilityAddTraits(tab == index ? [.isSelected] : [])
     }
 
     private func promptForInitialMemberIfNeeded() {

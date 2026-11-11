@@ -41,7 +41,7 @@ struct MeasurementReviewView: View {
                     VStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 42))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(AppTheme.accent)
                         Text("测量成功")
                             .font(.title2)
                             .fontWeight(.bold)
@@ -62,15 +62,7 @@ struct MeasurementReviewView: View {
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        LinearGradient(
-                            colors: [.teal.opacity(0.18), .mint.opacity(0.05)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: 22)
-                    )
+                    .appHeroCard(padding: 18)
 
                     MeasurementInsightCard(measurement: measurement)
 
@@ -146,7 +138,7 @@ struct MeasurementReviewView: View {
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.teal)
+                        .tint(AppTheme.accent)
 
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
@@ -163,8 +155,9 @@ struct MeasurementReviewView: View {
                         .disabled(isDeleting)
                     }
                 }
-                .padding().frame(maxWidth: 800).frame(maxWidth: .infinity)
+                .padding().appContentWidth(800)
             }
+            .appScreenBackground()
             .navigationTitle("本次结果")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

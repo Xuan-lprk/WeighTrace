@@ -8,13 +8,17 @@ struct PairingView: View {
         NavigationStack {
             List {
                 Section {
-                    VStack(spacing: 12) {
-                        Image(systemName: "scalemass").font(.system(size: 48)).foregroundStyle(.teal)
-                        Text("连接你的体脂秤").font(.title2).fontWeight(.bold)
+                    VStack(spacing: 14) {
+                        Image(systemName: "scalemass")
+                            .font(.system(size: 40))
+                            .foregroundStyle(AppTheme.accent)
+                            .frame(width: 88, height: 88)
+                            .background(AppTheme.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                        Text("连接你的体脂秤").font(.title2.weight(.bold))
                         Text("请打开本机蓝牙，并让体脂秤保持在附近。首次使用需先完成设备连接。")
                             .multilineTextAlignment(.center).font(.subheadline).foregroundStyle(.secondary)
                     }
-                    .frame(maxWidth: .infinity).padding(.vertical, 18)
+                    .frame(maxWidth: .infinity).padding(.vertical, 24)
                     .listRowBackground(Color.clear)
                 }
                 

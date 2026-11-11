@@ -41,6 +41,14 @@ struct AssistedWeighingCapture {
     private(set) var result: AssistedWeightRecord?
     private(set) var message: String?
 
+    var phaseTitle: String {
+        if result != nil { return String(appLocalized: "已完成") }
+        if waitingForStepOff && baselineWeight == nil { return String(appLocalized: "请先离秤") }
+        if baselineWeight == nil { return String(appLocalized: "第一步：称自己") }
+        if waitingForStepOff { return String(appLocalized: "请先离秤") }
+        return String(appLocalized: "第二步：抱着物品称重")
+    }
+
     mutating func receiveWeight(_ weight: Double, stable: Bool, at date: Date = Date()) -> AssistedWeightRecord? {
         guard result == nil, weight.isFinite, weight >= 0 else { return nil }
         if weight < 1 { waitingForStepOff = false; return nil }

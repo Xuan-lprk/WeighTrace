@@ -137,7 +137,7 @@ struct WeeklyReviewView: View {
 
                 evidence("本周原始记录", records: week.current.records)
                 evidence("上周原始记录", records: week.previous.records)
-            }.padding().frame(maxWidth: 800).frame(maxWidth: .infinity)
+            }.padding().appContentWidth(800)
         }.navigationTitle("本周回顾").navigationBarTitleDisplayMode(.inline)
     }
 

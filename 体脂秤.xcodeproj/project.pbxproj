@@ -40,7 +40,7 @@
 		52A4AF1F30072FF900F51607 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				52A4AF1E30072FF900F51607 /* 体脂秤.app */,
+				52A4AF1E30072FF900F51607 /* WeighTrace.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,7 +67,7 @@
 			packageProductDependencies = (
 			);
 			productName = "体脂秤";
-			productReference = 52A4AF1E30072FF900F51607 /* 体脂秤.app */;
+			productReference = 52A4AF1E30072FF900F51607 /* WeighTrace.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

@@ -3,60 +3,68 @@ import SwiftUI
 struct HistoryView: View {
     @EnvironmentObject private var scale: ScaleManager
     @EnvironmentObject private var comparisonStore: ComparisonStore
+    @EnvironmentObject private var profile: UserProfile
     @State private var deletionError: String?
     @State private var selectedTag = "all"
+    @State private var selectedMember = "all"
     private var filteredHistory: [BodyMeasurement] {
-        scale.history.filter { selectedTag == "all" || ($0.tags ?? []).contains(selectedTag) }
+        scale.history.filter {
+            (selectedTag == "all" || ($0.tags ?? []).contains(selectedTag)) &&
+            (selectedMember == "all" || ($0.memberID?.uuidString ?? "unknown") == selectedMember)
+        }.sorted { $0.date > $1.date }
+    }
+    private var groups: [(date: Date, records: [BodyMeasurement])] {
+        Dictionary(grouping: filteredHistory, by: { Calendar.current.startOfDay(for: $0.date) })
+            .map { (date: $0.key, records: $0.value) }.sorted { $0.date > $1.date }
+    }
+    private var members: [(key: String, name: String)] {
+        var options = [(key: profile.primaryMember.id.uuidString, name: String(appLocalized: "本人"))]
+        options += profile.members.map { (key: $0.id.uuidString, name: $0.name) }
+        for record in scale.history {
+            let key = record.memberID?.uuidString ?? "unknown"
+            if !options.contains(where: { $0.key == key }) {
+                options.append((key, record.memberName ?? String(appLocalized: "未归属")))
+            }
+        }
+        return options
     }
 
     var body: some View {
         NavigationStack {
             List {
-                Picker("测量条件", selection: $selectedTag) {
-                    Text("全部").tag("all")
-                    ForEach(MeasurementTag.allCases) { Text($0.title).tag($0.rawValue) }
+                AppPageHeader(title: "你的测量档案", subtitle: "按日期整理，每一笔都能追溯。")
+                    .listRowBackground(Color.clear).listRowSeparator(.hidden)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("\(filteredHistory.count) 条记录").font(.headline)
+                    Picker("成员", selection: $selectedMember) {
+                        Text("全部").tag("all")
+                        ForEach(members, id: \.key) { Text($0.name).tag($0.key) }
+                    }
+                    Picker("测量条件", selection: $selectedTag) {
+                        Text("全部").tag("all")
+                        ForEach(MeasurementTag.allCases) { Text($0.title).tag($0.rawValue) }
+                    }
+                }.appCard().listRowBackground(Color.clear).listRowSeparator(.hidden)
+                if filteredHistory.isEmpty {
+                    EmptyStateView(title: "还没有测量记录", icon: "calendar.badge.clock", message: "换个筛选条件，或完成一次测量。")
+                        .listRowBackground(Color.clear).listRowSeparator(.hidden)
                 }
-                if scale.history.isEmpty { EmptyStateView(title: "还没有测量记录", icon: "calendar.badge.clock", message: "完成首次测量后，记录将保存在这里。") }
-                ForEach(filteredHistory) { item in
-                    NavigationLink(destination: MeasurementDetailView(measurement: item)) {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(item.memberName ?? String(appLocalized: "本人")).fontWeight(.semibold)
-                                Text(item.date, format: .dateTime.year().month().day().hour().minute())
-                                Text("BMI \(item.bmi, specifier: "%.2f") · 体脂 \(item.bodyFat, specifier: "%.1f")%")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                HStack(spacing: 8) {
-                                    if item.hasDualADC {
-                                        Label("双 ADC", systemImage: "arrow.left.arrow.right")
-                                    }
-                                    if comparisonStore.reference(for: item.id) != nil {
-                                        Label("已对照阿福", systemImage: "checkmark.seal")
-                                    }
-                                }
-                                .font(.caption2)
-                                .foregroundStyle(.teal)
-                            }
-                            Spacer()
-                            Text("\(item.weight, specifier: "%.2f") kg")
-                                .fontWeight(.semibold)
-                        }
-                    }
-                }.onDelete { offsets in
-                    let measurements = offsets.compactMap { index in
-                        filteredHistory.indices.contains(index) ? filteredHistory[index] : nil
-                    }
-                    Task {
-                        for measurement in measurements {
-                            if let error = await scale.deleteMeasurement(measurement) {
-                                deletionError = error
-                                break
-                            }
-                        }
+                ForEach(groups, id: \.date) { group in
+                    Section {
+                        ForEach(group.records) { item in
+                            NavigationLink { MeasurementDetailView(measurement: item) } label: { historyCard(item) }
+                                .contextMenu { Button("删除", role: .destructive) { delete([item]) } }
+                                .listRowBackground(Color.clear).listRowSeparator(.hidden)
+                        }.onDelete { offsets in delete(offsets.map { group.records[$0] }) }
+                    } header: {
+                        Text(group.date, format: .dateTime.year().month().day()).font(.subheadline.weight(.semibold))
                     }
                 }
             }
-            .navigationTitle("测量历史")
+            .listStyle(.plain).scrollContentBackground(.hidden)
+            .appContentWidth(1000)
+            .navigationBarTitleDisplayMode(.inline)
+            .appScreenBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
@@ -80,6 +88,45 @@ struct HistoryView: View {
                 Text(deletionError ?? "")
             }
         }
+    }
+
+    private func delete(_ records: [BodyMeasurement]) {
+        Task {
+            for record in records {
+                if let error = await scale.deleteMeasurement(record) { deletionError = error; break }
+            }
+        }
+    }
+
+    private func historyCard(_ item: BodyMeasurement) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(item.memberName ?? String(appLocalized: "本人")).font(.headline)
+                    Text(item.date, format: .dateTime.hour().minute()).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("\(item.weight, specifier: "%.2f") kg")
+                    .font(.system(.title, design: .rounded, weight: .semibold))
+            }
+            Divider()
+            ViewThatFits(in: .horizontal) {
+                HStack { compositionLabel(item); Spacer(); recordBadges(item) }.fixedSize(horizontal: true, vertical: false)
+                VStack(alignment: .leading, spacing: 8) { compositionLabel(item); recordBadges(item) }
+            }
+        }.appCard(padding: 20)
+    }
+
+    private func compositionLabel(_ item: BodyMeasurement) -> some View {
+        Text("BMI \(item.bmi, specifier: "%.2f") · 体脂 \(item.bodyFat, specifier: "%.1f")%")
+            .font(.caption).foregroundStyle(.secondary)
+    }
+
+    private func recordBadges(_ item: BodyMeasurement) -> some View {
+        HStack(spacing: 8) {
+            if item.hasDualADC { Label("双 ADC", systemImage: "waveform.path") }
+            if comparisonStore.reference(for: item.id) != nil { Label("已对照阿福", systemImage: "checkmark.seal") }
+        }.font(.caption2.weight(.medium)).foregroundStyle(AppTheme.accent)
     }
 }
 
@@ -115,17 +162,11 @@ struct MeasurementDetailView: View {
                     }
                     Spacer()
                     if measurement.impedance > 0 {
-                        Label(
-                            measurement.adcIndex.map { "ADC \($0 + 1) · \(Int(measurement.impedance)) Ω" }
+                        AppBadge(
+                            title: measurement.adcIndex.map { "ADC \($0 + 1) · \(Int(measurement.impedance)) Ω" }
                                 ?? "\(Int(measurement.impedance)) Ω",
                             systemImage: "bolt.heart"
                         )
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.teal)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(.teal.opacity(0.12), in: Capsule())
                     }
                 }
                 
@@ -151,8 +192,7 @@ struct MeasurementDetailView: View {
                     }
                 }
             }
-            .padding()
-            .background(LinearGradient(colors: [.teal.opacity(0.15), .mint.opacity(0.05)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
+            .appHeroCard(padding: 18)
 
             MeasurementInsightCard(measurement: measurement)
 
@@ -195,8 +235,7 @@ struct MeasurementDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding()
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
+                .appCard()
             } else {
                 Text("这是一条旧记录，只保存了当时选中的 ADC，无法还原另一条进行公平对比。")
                     .font(.caption)
@@ -227,6 +266,7 @@ struct MeasurementDetailView: View {
             }
         }
         .padding()
+        .appContentWidth(800)
         .navigationTitle("测量详情")
         .navigationBarTitleDisplayMode(.inline)
     }

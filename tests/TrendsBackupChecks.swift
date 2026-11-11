@@ -3,6 +3,7 @@ import Foundation
 @main
 struct TrendsBackupChecks {
     @MainActor static func main() throws {
+        MeasurementInsightChecks.run()
         let realProfileBefore = UserDefaults.standard.data(forKey: "afu.primary.profile")
         let realReferencesBefore = UserDefaults.standard.data(forKey: "afu.official.references")
         let suiteName = "afu.tests.demo.\(UUID().uuidString)"

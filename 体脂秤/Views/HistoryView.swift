@@ -154,6 +154,8 @@ struct MeasurementDetailView: View {
             .padding()
             .background(LinearGradient(colors: [.teal.opacity(0.15), .mint.opacity(0.05)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
 
+            MeasurementInsightCard(measurement: measurement)
+
             if let impedances = measurement.normalizedImpedances, impedances.count >= 2 {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {

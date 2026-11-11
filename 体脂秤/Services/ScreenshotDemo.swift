@@ -46,6 +46,7 @@ import Combine
                 rawADCs: [adc1, adc2], normalizedImpedances: [adc1, adc2]
             )
             measurement.note = String(appLocalized: "虚构的截图演示数据")
+            measurement.tags = day % 6 == 0 ? [MeasurementTag.afterMeal.rawValue] : [MeasurementTag.morning.rawValue]
             records.append(measurement)
             if day % 2 == 0 {
                 comparisons.upsert(OfficialReferenceRecord(

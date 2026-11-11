@@ -72,6 +72,8 @@ struct MeasurementReviewView: View {
                         in: RoundedRectangle(cornerRadius: 22)
                     )
 
+                    MeasurementInsightCard(measurement: measurement)
+
                     if adcMeasurements.count == 2 {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("双 ADC 预览")
@@ -161,7 +163,7 @@ struct MeasurementReviewView: View {
                         .disabled(isDeleting)
                     }
                 }
-                .padding()
+                .padding().frame(maxWidth: 800).frame(maxWidth: .infinity)
             }
             .navigationTitle("本次结果")
             .navigationBarTitleDisplayMode(.inline)

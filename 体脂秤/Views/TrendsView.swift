@@ -11,6 +11,7 @@ struct TrendsView: View {
     @State private var metric = TrendMetric.weight
     @State private var useDailyMedian = true
     @State private var selectedDate: Date?
+    @State private var reviewDate = Date()
 
     private var memberOptions: [(key: String, name: String)] {
         var result = [(profile.primaryMember.id.uuidString, String(appLocalized: "本人"))]
@@ -81,6 +82,14 @@ struct TrendsView: View {
                     Picker("成员", selection: $memberKey) {
                         ForEach(memberOptions, id: \.key) { option in Text(option.name).tag(option.key) }
                     }
+                    WeeklyReviewCard(
+                        week: MeasurementInsights.Week(history: scale.history, memberID: UUID(uuidString: memberKey), now: reviewDate),
+                        memberName: memberOptions.first { $0.key == memberKey }?.name ?? String(appLocalized: "未归属")
+                    )
+                    if memberKey == "unknown" {
+                        Text("请先确认记录归属，再进行个人趋势比较。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                     Picker("时间范围", selection: $days) {
                         Text("30 天").tag(30); Text("90 天").tag(90); Text("全部").tag(0)
                     }.pickerStyle(.segmented)
@@ -147,11 +156,12 @@ struct TrendsView: View {
                     .frame(maxWidth: .infinity)
             }
             .navigationTitle("测量趋势")
-            .task { await healthKit.refreshTrends() }
-            .refreshable { await healthKit.refreshTrends() }
+            .task { reviewDate = .now; await healthKit.refreshTrends() }
+            .refreshable { reviewDate = .now; await healthKit.refreshTrends() }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await healthKit.refreshTrends() } }
+                if phase == .active { reviewDate = .now; Task { await healthKit.refreshTrends() } }
             }
+            .onChange(of: scale.history) { _, _ in reviewDate = .now }
             .onChange(of: memberKey) { _, _ in selectedDate = nil }
             .onChange(of: days) { _, _ in selectedDate = nil }
             .onChange(of: metric) { _, _ in selectedDate = nil }
